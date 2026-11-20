@@ -26,3 +26,6 @@ Python 3.10+. Game logic is **pure stdlib** and deterministic (Test Contract **v
 - Document every new assumption in `docs/notes/phase-N.md`.
 - Shell on Windows: Git Bash heredocs mangle `\` + newline; write multi-line patch scripts with the Write tool, not heredocs.
 - Hooks must `cd "$CLAUDE_PROJECT_DIR"` first (relative paths broke when cwd changed).
+- Solid decor (levels.py `decor`) collides only when `Sim(extras=True)` (web client). Headless must stay byte-identical: `tests/test_extras.py` re-runs a committed Phase 2 proof.
+- Web perf budget: keep 60 FPS (`python3 tools/fps_bench.py`); prefer InstancedMesh and pre-created lights (adding a light recompiles every shader).
+- Before editing README.md, re-read it from disk: an editor once saved a stale buffer over it.

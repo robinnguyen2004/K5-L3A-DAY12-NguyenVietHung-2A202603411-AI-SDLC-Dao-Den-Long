@@ -1,81 +1,98 @@
 # Đảo Đèn Lồng — Day 12 AI SDLC (Nguyễn Việt Hưng · 2A202603411)
 
-> Video demo: *(sẽ thêm ở Phase 4, Release `v1.0.0`)* · Đề bài lab: [LAB.md](LAB.md) · Phase hiện tại: **Phase 1 (PRD-0)**, tag `phase-1`
+> Video demo: *(sẽ thêm ở Phase 4, Release `v1.0.0`)* · Đề bài lab: [LAB.md](LAB.md) · Phase hiện tại: **Phase 2 (Ticket-02 "Ba hòn đảo")**, tag `phase-2`, **Test Contract v1.1**
 
-Game 3D góc nhìn thứ ba. Mây, người giữ đèn nhỏ tuổi đội nón lá, chạy khắp Đảo Bến gom đom đóm để thắp lại 5 Đèn Lồng Lớn trước bình minh, đồng thời né hoặc xua Bóng Mực.
+Game 3D góc nhìn thứ ba qua **3 Đêm**: Đảo Bến, Đảo Cau, Đảo Chuông. Mây, cô phù thủy nhỏ giữ đèn, đội nón lá treo đèn lồng. Cô gom đom đóm để thắp lại các Đèn Lồng Lớn trước bình minh, né Bóng Mực, Gió Lạc và cả biển mây dưới chân.
 
-![Thắng Đêm 1](docs/proof/phase-1/gui_demo_won.png)
+![Đêm 1 – Đảo Bến](docs/proof/visual-upgrade/night1.png)
 
-## Cài đặt và chạy (macOS / Linux, Python ≥ 3.10)
+## Cài đặt và chạy (macOS / Linux / Windows, Python ≥ 3.10, không cần cài thư viện)
 
 ```bash
 git clone https://github.com/robinnguyen2004/K5-L3A-DAY12-NguyenVietHung-2A202603411-AI-SDLC-Dao-Den-Long.git && cd K5-L3A-DAY12-NguyenVietHung-2A202603411-AI-SDLC-Dao-Den-Long
-python3 -m venv .venv && .venv/bin/python -m pip install -r requirements.txt
-.venv/bin/python run_game.py            # thêm --demo để xem bot tự chơi
+python3 tools/build_web.py
+python3 run_game.py
 ```
 
-Windows: thay `.venv/bin/python` bằng `.venv\Scripts\python`.
+`run_game.py` mở game trong trình duyệt qua một server tĩnh trên localhost. Cũng có thể mở thẳng file [web/dao-den-long.html](web/dao-den-long.html). Cần Internet để tải Three.js và Pyodide từ CDN. Trình duyệt chạy **đúng mã Python** `lantern_island/sim.py` qua Pyodide, nên luật chơi giống hệt bản headless.
 
-**Headless (Test Contract v1.0)** chỉ dùng thư viện chuẩn, không cần cài gì, không cần cửa sổ/GPU:
+**Headless (Test Contract v1.1):** chỉ dùng thư viện chuẩn, không cần cửa sổ hay GPU.
 
 ```bash
-python3 headless.py --seed 1 --night 1 [--scenario s.json] [--inputs i.json] --ticks 600 --out out.jsonl [--snapshot-every 10]
+python3 headless.py --seed 1 --night 1|2|3 [--scenario s.json] [--inputs i.json] --ticks 600 --out out.jsonl [--snapshot-every 10]
 ```
 
-**Kiểm chứng (một lệnh):** `python3 tools/verify.py` chạy unit test, các scenario mẫu qua CLI thật, kiểm tất định, mã thoát 2 và bot chơi hết Đêm 1. CI chạy lệnh này mỗi lần push trên Ubuntu và macOS ([.github/workflows/ci.yml](.github/workflows/ci.yml)).
+**Kiểm chứng bằng một lệnh:** `python3 tools/verify.py`. Lệnh này chạy toàn bộ unit test, các scenario mẫu qua CLI thật, kiểm tất định cả 3 đêm, kiểm mã thoát 2, và cho bot chơi các đêm. CI chạy nó trên Ubuntu và macOS mỗi lần push ([.github/workflows/ci.yml](.github/workflows/ci.yml)). Đo FPS của bản web: `python3 tools/fps_bench.py`.
 
 ## Điều khiển
 
 | Phím | Hành động |
 |---|---|
-| W A S D | Đi (theo hướng camera) |
-| ← / → | Xoay camera |
-| Space | Nhảy |
-| E | Nạp đom đóm vào đèn gần nhất (trong 3 m) |
-| Q | Tỏa sáng: tốn 1 đom đóm, làm choáng và đẩy lùi Bóng Mực trong 6 m |
-| R | Chơi lại (bất kỳ lúc nào, kể cả sau khi thắng/thua) |
-| Esc | Thoát |
+| W A S D | Đi theo hướng camera |
+| Chuột (bấm vào màn hình để khóa) / ← → | Xoay camera; độ nhạy chỉnh trong Cài đặt |
+| Space · Shift | Nhảy · Lướt (14 m/s trong 0.2 s, hồi 1.5 s) |
+| E | Nạp ánh sáng vào đèn trong 2 m |
+| Q / chuột trái | Tỏa Sáng: tốn 3 đom đóm, làm choáng Bóng Mực trong 5 m |
+| Esc / P · F3 | Tạm dừng (Tiếp tục / Chơi lại Đêm / Cài đặt / Về menu) · Hiện FPS |
 
-## Luật và cách tính điểm
+Menu chính có **Bắt đầu** (chuỗi 3 đêm), chọn thẳng Đêm 1/2/3, **Xem bot chơi**, và **Cài đặt** (âm lượng, độ nhạy chuột, hiện FPS; lưu trên trình duyệt).
 
-- Mây có **3 ngọn lửa** (máu). Bị Bóng Mực chạm (≤ 1 m): mất 1 lửa, rơi một nửa số đom đóm đang mang (làm tròn xuống), bất tử 2 s.
-- Mang tối đa **10** đom đóm, mỗi đèn cần **5**. Đèn đã thắp tạo **vùng an toàn 6 m** mà Bóng Mực không vào được.
-- Đêm dài **300 s**. Thắp đủ 5 đèn thì **thắng**. Hết lửa thì **thua**, trời sáng mà chưa xong cũng **thua**.
+## Luật và điểm (số chuẩn của Ticket-02)
+
+- **3 Ngọn Lửa** (máu), hồi đầy đầu mỗi Đêm.
+  - Bị Bóng Mực chạm: −1 lửa, rơi một nửa số đom đóm ra quanh Mây (8 s sau thì tan, nhặt lại được), bất tử 1.5 s.
+  - Rơi khỏi đảo: −1 lửa, mất hết đom đóm, hồi sinh ở điểm xuất phát sau 1 s.
+- Mang tối đa **10** đom đóm, mỗi đèn cần **10**. Đèn nhớ tiến độ nên nạp nhiều lần được.
+- Đèn đã sáng tạo vùng an toàn 6 m mà Bóng Mực không vào được.
+- Đêm dài 300 / 330 / 360 s.
+  - Thắp hết đèn thì thắng, kể cả đúng tick hết giờ.
+  - Hết lửa thì thua.
+  - Hết giờ mà chưa thắp hết thì thua.
+- **Gió Lạc** (Đêm 2–3): cướp 3 đom đóm nếu bạn mang từ 5 trở lên. **Bùa Gió**: chạy 7.2 m/s và lướt không hồi chiêu trong 10 s. **Gió mạnh** (Đêm 3): mỗi 30 s, báo trước bằng lá bay.
 
 | Sự kiện | Điểm |
 |---|---|
-| Nhặt 1 đom đóm | +10 |
+| Mỗi đom đóm **nạp** vào đèn | +10 |
 | Thắp 1 đèn | +100 |
-| Mỗi Bóng Mực bị choáng bởi tỏa sáng | +20 |
-| Khi thắng: mỗi giây nguyên còn lại | +2 |
-| Khi thắng: mỗi ngọn lửa còn lại | +50 |
+| Mỗi Bóng Mực trúng Tỏa Sáng (kể cả con đang choáng) | +5 |
+| Khi thắng: mỗi giây nguyên còn lại / mỗi Ngọn Lửa còn lại | +2 / +50 |
 
-Mọi con số nằm trong [game.contract.json](game.contract.json). Game **đọc trực tiếp** file này, nên số khai báo luôn là số đang dùng. `fall_enabled: false`: Mây không thể rơi khỏi đảo (bị giữ trong bán kính 40 m), vì vậy không có sự kiện `player_hit` với `by: "fall"`. Toàn bộ giả định: [docs/notes/phase-1.md](docs/notes/phase-1.md).
+Tổng điểm game là tổng điểm các Đêm đã thắng. Mọi con số nằm trong [game.contract.json](game.contract.json), và game đọc trực tiếp file này. Giả định và thay đổi so với Phase 1: [docs/notes/phase-2.md](docs/notes/phase-2.md).
 
 ## Kiến trúc
 
 ```
-lantern_island/sim.py       luật game thuần Python, 60 tick/s cố định, tất định theo seed
-lantern_island/headless.py  CLI theo Test Contract (validate input, JSONL, mã thoát)
-lantern_island/game.py      client 3D Panda3D: chỉ đọc input + vẽ, gọi chung sim.step()
-lantern_island/bot.py       bot chỉ dùng input như người chơi (bằng chứng + --demo)
-tests/                      34 unit test bám theo contract + scenario mẫu
-tools/verify.py             kiểm chứng một lệnh, --write để sinh docs/proof/phase-1
+lantern_island/levels.py    bản đồ chuẩn 3 đêm + độ cao địa hình + chướng ngại trang trí (cố định theo đêm)
+lantern_island/sim.py       luật game, 60 tick/s, đúng thứ tự 12 bước của Ticket-02, tất định theo seed
+lantern_island/headless.py  CLI Test Contract v1.1 (validate input/scenario, JSONL, mã thoát 2)
+lantern_island/bot.py       bot chỉ dùng input như người chơi (bằng chứng + "Xem bot chơi")
+web/template.html           client 3D Three.js; tools/build_web.py nhúng mã Python vào web/dao-den-long.html
+tests/                      unit test v1.1 + test_extras (chướng ngại) + scenario mẫu; test_web báo đỏ nếu bản web bị cũ
+tools/verify.py             kiểm chứng một lệnh; --write phase-N để sinh docs/proof/phase-N
+tools/fps_bench.py          đo FPS thật của client web (bot chơi Đêm 3)
 ```
 
 ## Sáng tạo của tôi
 
-Chỉ có ở phần hiển thị (`game.py`), **không** chạm vào `sim.py`, nên không làm đổi đầu ra headless:
+Không mục nào làm đổi đầu ra headless:
 
-1. **Đom đóm bay quanh Mây:** mỗi đom đóm đang mang là một đốm sáng bay vòng quanh nhân vật, và đèn nhỏ trên nón lá sáng mạnh hơn khi mang nhiều. Người chơi nhìn nhân vật là biết mình mang bao nhiêu.
-2. **Vòng sáng an toàn:** đèn đã thắp vẽ một vòng sáng vàng nhấp nháy đúng bằng `safe_radius`, nên luật "Bóng Mực sợ đèn" nhìn thấy được.
-3. **Bóng Mực có đôi mắt** nhìn theo Mây. Khi bị choáng, Bóng Mực co lại và nhạt màu.
+1. **Mây là một cô phù thủy nhỏ** (dựa trên ảnh tham khảo của tôi). Nhân vật dựng thành rig có hoạt ảnh đi, nhảy, lướt và giơ tay khi tỏa sáng. Có áo choàng kem viền vàng, khăn đỏ có hai đuôi bay, mặt tối với ngôi sao phát sáng, gậy phép đầu xoắn ốc. Nón lá vẫn giữ (PRD-0), có gân, dải đỏ và đỉnh gập kiểu phù thủy, kèm đèn lồng treo.
+2. **Chướng ngại vật thật:** cây thông, cây khô, bia mộ, đá chặn đường Mây; bia mộ và đá nhỏ thì nhảy qua được.
+   - Va chạm nằm trong `sim.py` nhưng chỉ bật ở client 3D (`Sim(extras=True)`).
+   - Headless không có chướng ngại. Test `test_headless_reproduces_phase2_proof` chạy lại scenario Phase 2 và so từng byte.
+   - Vị trí cố định theo đêm, chừa trống quanh đèn, điểm sinh đom đóm, cầu và dốc.
+3. **Đảo ma tự sáng tác:**
+   - Phong cảnh: đảo nổi có vách đá, cây khô, bia đá, ma trơi, bầu trời sao + trăng, biển mây.
+   - Đèn lồng giấy có gân, ánh sáng loang trên mặt đất.
+   - Bóng Mực có viền tím, xúc tu và mắt nhìn theo Mây.
+4. **Đom đóm bay quanh Mây** theo số đang mang. Vòng sáng an toàn hiện đúng 6 m quanh đèn đã thắp.
+5. **Âm thanh tổng hợp bằng WebAudio** (không dùng file ngoài) và lời dẫn của Ông Đăng cho từng đêm.
+6. **60 FPS:** decor vẽ bằng instancing; đèn tạo sẵn nên thắp đèn không gây khựng; tự hạ độ phân giải khi chậm. Đo được khoảng 165 FPS trung bình trên GPU Intel Iris Xe tích hợp ([fps_bench.json](docs/proof/visual-upgrade/fps_bench.json)).
 
-**Bằng chứng phần cũ vẫn đúng:** `tools/verify.py` so hash của output headless (cùng seed chạy hai lần cho kết quả giống từng byte) và chạy lại toàn bộ 34 test. Màn thắng trong GUI ([ảnh](docs/proof/phase-1/gui_demo_won.png)) cho điểm 1400, trùng điểm headless của cùng seed 7 ([run_seed7.jsonl](docs/proof/phase-1/bot/run_seed7.jsonl)).
+Bằng chứng: [docs/proof/visual-upgrade](docs/proof/visual-upgrade/README.md). `tools/verify.py` so hash output headless (chạy hai lần giống từng byte) và chạy lại toàn bộ test.
 
 ## Bằng chứng và ghi chép
 
-- Bảng yêu cầu → bằng chứng: [docs/proof/phase-1/README.md](docs/proof/phase-1/README.md)
-- Giả định, tiêu chí nghiệm thu, đánh giá phase: [docs/notes/phase-1.md](docs/notes/phase-1.md)
-- Nhật ký dùng AI và token: [docs/notes/ai-log.md](docs/notes/ai-log.md)
-- Harness AI: [AGENTS.md](AGENTS.md) (CLAUDE.md trỏ tới), skill [.claude/skills/verify-proof](.claude/skills/verify-proof/SKILL.md), hook [.claude/settings.json](.claude/settings.json) (Stop hook chặn kết thúc khi test đỏ; PostToolUse kiểm tra contract JSON hợp lệ)
+- Phase 2: [docs/proof/phase-2/README.md](docs/proof/phase-2/README.md) · Phase 1: [docs/proof/phase-1/README.md](docs/proof/phase-1/README.md) · Nâng cấp hình ảnh: [docs/proof/visual-upgrade/README.md](docs/proof/visual-upgrade/README.md)
+- Giả định và đánh giá: [phase-1.md](docs/notes/phase-1.md), [phase-2.md](docs/notes/phase-2.md) · Nhật ký AI và token: [ai-log.md](docs/notes/ai-log.md)
+- Harness AI: [AGENTS.md](AGENTS.md) (CLAUDE.md trỏ tới), skill [verify-proof](.claude/skills/verify-proof/SKILL.md), hook [.claude/settings.json](.claude/settings.json) (Stop hook chặn kết thúc khi test đỏ; PostToolUse kiểm tra contract JSON hợp lệ)
