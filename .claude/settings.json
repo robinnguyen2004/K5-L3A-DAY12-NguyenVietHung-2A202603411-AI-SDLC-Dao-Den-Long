@@ -1,0 +1,25 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -m unittest discover -s tests -q >/dev/null 2>&1 || python -m unittest discover -s tests -q >/dev/null 2>&1 || { echo 'Unit tests are failing: fix them before finishing (python3 -m unittest discover -s tests).' >&2; exit 2; }"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"import json; json.load(open('game.contract.json'))\" 2>/dev/null || python -c \"import json; json.load(open('game.contract.json'))\" || { echo 'game.contract.json is not valid JSON' >&2; exit 2; }"
+          }
+        ]
+      }
+    ]
+  }
+}
