@@ -23,7 +23,8 @@ def main():
     handler = functools.partial(QuietHandler, directory=WEB)
     with socketserver.TCPServer(("127.0.0.1", 0), handler) as httpd:
         url = "http://127.0.0.1:%d/dao-den-long.html" % httpd.server_address[1]
-        print("Đảo Đèn Lồng đang chạy tại", url, "(Ctrl+C để dừng)", flush=True)
+        # ASCII only: a Vietnamese message crashes on Windows consoles using cp1252
+        print("Dao Den Long is running at", url, "(Ctrl+C to stop)", flush=True)
         if "--no-open" not in sys.argv:
             webbrowser.open(url)
         try:
