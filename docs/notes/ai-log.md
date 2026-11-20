@@ -20,3 +20,20 @@ Công cụ: Claude Code (model Claude Opus 5.5) trong VS Code. Harness: [AGENTS.
 - AI kết luận "screenshot saved" khi pipe `| tail` che mã thoát thật → bài học: kiểm file tồn tại, không tin exit code sau pipe.
 
 **Token / chi phí ước tính (Phase 1):** khoảng 250–300k token (input + output, phần lớn là đọc tài liệu lab và viết code). Cách tiết kiệm: đọc PDF một lần; trích phần còn thiếu của lab board bằng script thay vì đọc cả HTML; không dùng subagent; test và `verify.py` cho phản hồi ngắn (PASS/FAIL) thay vì đọc output dài; giữ AGENTS.md dưới 30 dòng.
+
+## Phase 2 (Ticket-02 "Ba hòn đảo")
+
+| Bước | Việc giao cho AI | Kết quả, tôi kiểm thế nào |
+|---|---|---|
+| Đọc yêu cầu | PDF Ticket-02 + yêu cầu riêng: nhân vật mage theo ảnh, bối cảnh "Đảo Bóng Đêm" (Liên Minh Huyền Thoại), quái vật từ `D:\ENIGMA\...` | AI **từ chối hai phần**: bối cảnh LMHT là IP của Riot; ảnh quái vật ghi "© 2024 Enigma Softwares, Inc. All rights reserved" (RULES mục 8 + repo public). Thay bằng đảo ma tự sáng tác. Nhân vật mage được làm nhưng giữ palette và nón lá bắt buộc |
+| PDF bị cắt | Danh sách trạng thái Bóng Mực v1.1 không đọc được trên lab board | Giả định B1 (`spawning, wander, chase, recoil, stunned`), đối chiếu với code nền của lab board |
+| Lõi | `levels.py` (bản đồ chuẩn) + viết lại `sim.py` theo thứ tự 12 bước + headless v1.1 | 39 test mới. Lần chạy đầu: 8 đỏ, gồm 5 lỗi do test tự tính sai (hồi chiêu k+N, khoảng cách 3D, chuyển trạng thái trong cùng tick, Gió Lạc idle, test cho nhân vật đi rơi khỏi cầu) và 1 lỗi code (Gió Lạc xuất hiện ở Đêm 1 khi scenario bật cờ) |
+| Bot | Đi 3 bản đồ | Lần 1 thua gần hết. **Phân tích JSONL** thấy 100% số lần chết là rơi khỏi đảo, không phải do Bóng Mực ⇒ thêm kiểm tra mép đảo ⇒ thắng Đêm 1–2. Tỏa Sáng vào Gió Lạc tốn 3 = đúng số bị cướp ⇒ bỏ, chuyển sang nạp sớm khi Gió Lạc ở gần |
+| Client | Bản web v2 (menu, 3 đêm, tạm dừng, cài đặt, âm thanh, HUD, palette, mage) | Chụp headless cả 3 đêm; bỏ client Panda3D (lý do ở phase-2.md) |
+
+**Lỗi của AI và cách chặn tái diễn:**
+- Script vá bằng heredoc trong Git Bash làm hỏng `\` + xuống dòng, assert thất bại ba lần ⇒ ghi vào AGENTS.md: viết script vá bằng Write tool.
+- Hook PostToolUse dùng đường dẫn tương đối nên báo lỗi giả khi cwd đổi ⇒ hook giờ `cd "$CLAUDE_PROJECT_DIR"`.
+- Hai luật timer của Phase 1 và Phase 2 dễ lẫn ⇒ AGENTS.md ghi rõ: hiệu lực hết tick k+N−1, hồi chiêu sẵn sàng ở tick k+N.
+
+**Token / chi phí ước tính (Phase 2):** khoảng 400–500k token. Phần lớn là viết sim mới, client web và các vòng sửa bot. Cách tiết kiệm: chỉ đọc lại đoạn bị cắt của lab board bằng grep; kiểm chứng bằng PASS/FAIL ngắn; phân tích nguyên nhân chết của bot bằng script trên JSONL thay vì đọc log; dừng tinh chỉnh bot Đêm 3 và ghi trung thực thay vì đốt thêm token.
