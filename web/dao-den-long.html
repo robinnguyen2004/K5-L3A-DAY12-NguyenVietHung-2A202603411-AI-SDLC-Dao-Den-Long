@@ -223,6 +223,8 @@ const SFX = {
   charm_picked: () => [784, 1046, 1318].forEach((f, i) => tone(f, 0.25, "sine", 0.12, null, i * 0.05)),
   drifter_steal: () => tone(500, 0.3, "triangle", 0.12, 200),
   countdown: () => tone(1000, 0.06, "square", 0.08),
+  wind_warning: () => { noise(1.6, 0.18, 500); tone(660, 0.4, "sine", 0.06, 880); tone(880, 0.4, "sine", 0.05, 660, 0.35); },
+  wind_gust: () => { noise(2.5, 0.28, 350); noise(2.5, 0.15, 900); },
 };
 function startMusic() {
   const ctx = audio.ctx, g = ctx.createGain(); g.gain.value = 0.05; g.connect(audio.master);
@@ -421,7 +423,7 @@ function floatingIsland(cx, cz, r, rnd) {
   topGeo.setAttribute("color", new THREE.Float32BufferAttribute(cols, 3));
   g.add(new THREE.Mesh(topGeo, new THREE.MeshLambertMaterial({ vertexColors: true })));
   const rim = new THREE.Mesh(new THREE.RingGeometry(r - 1.1, r, 64, 1).rotateX(-Math.PI / 2), lam(C.sand)); rim.position.y = 0.005; g.add(rim);
-  const cliff = new THREE.Mesh(prep(new THREE.CylinderGeometry(r, r * 0.72, 4, 40, 3, true), C.wood, 0.18, rnd), decorMat);
+  const cliff = new THREE.Mesh(prep(new THREE.CylinderGeometry(r, r * 0.72, 4, 40, 3, true), C.wood, 0.08, rnd), decorMat);
   cliff.position.y = -2; g.add(cliff);
   const under = new THREE.Mesh(prep(new THREE.ConeGeometry(r * 0.72, r * 0.6, 20, 3), 0x4a3a33, 0.2, rnd), decorMat);
   under.rotation.x = Math.PI; under.position.y = -4 - r * 0.3; g.add(under);
@@ -969,8 +971,10 @@ function frame(now) {
         if (e.name === "pulse") { game.pulseT = 0; may.userData.cast = 0.35; }
         if (SFX[e.name]) SFX[e.name]();
       }
-      const prevGrounded = game.st.player.grounded;
+      const prevGrounded = game.st.player.grounded, prevSoon = game.st.wind_soon, prevGust = game.st.wind.active;
       game.st = JSON.parse(getState());
+      if (game.st.wind_soon && !prevSoon) SFX.wind_warning();   // Ticket-02: 2 s warning by leaves AND sound
+      if (game.st.wind.active && !prevGust) SFX.wind_gust();
       if (prevGrounded && !game.st.player.grounded && game.st.player.vel[1] > 5) SFX.jump();
       if ((game.st.state === "won" || game.st.state === "lost") && !game.ended) { sync(dt); endNight(game.st); }
     }

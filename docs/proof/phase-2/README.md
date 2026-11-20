@@ -14,11 +14,11 @@ Tạo lại: `python3 tools/verify.py --write phase-2` (không sửa tay). Kết
 | Bản đồ chuẩn 3 đêm (đèn, điểm sinh, cầu, bục nhảy, tầng, dốc, tháp) | Test | `Maps`, `Terrain`; [night2_pad.jsonl](night2_pad.jsonl) | Đạt |
 | Gió Lạc | Scenario + test | [drifter_steal.jsonl](drifter_steal.jsonl); `Drifters` | Đạt |
 | Bùa Gió | Test | `Charms` | Đạt |
-| Gió mạnh Đêm 3 | Test | `Wind` | Đạt |
+| Gió mạnh Đêm 3 (đẩy 2 m/s, 5 s mỗi 30 s, báo trước 2 s bằng lá bay + âm thanh) | Test + đọc mã client (`SFX.wind_warning`) | `Wind` | Đạt |
 | Tạm dừng (sim_tick, thời gian, spawn đứng yên; state `paused`) | Scenario + test | [pause.jsonl](pause.jsonl); `Pause` | Đạt |
 | Contract v1.1: trường snapshot/scenario/input/sự kiện mới | Test | `TickModelAndShape`, `CliExitCodes` | Đạt |
 | Tất định (cả 3 đêm) | Chạy 2 lần, so sha256 | verify_summary | Đạt |
-| 3 đêm chơi được | Bot chỉ dùng input, ghi lại rồi phát lại qua CLI | [bot/](bot/): Đêm 1 seed 1, 7 **thắng**; Đêm 2 seed 1, 7 **thắng**; Đêm 3 seed 42 thắp 5/7 rồi hết giờ | Đêm 1–2 đạt; Đêm 3 bot chưa thắng (chơi tay được) |
+| 3 đêm chơi được | Bot chỉ dùng input, ghi lại rồi phát lại qua CLI | [bot/](bot/): Đêm 1 seed 1, 7 **thắng**; Đêm 2 seed 1, 7 **thắng**; Đêm 3 seed 42 thắp 5/7 rồi hết giờ | Đêm 1–2 đạt; Đêm 3 **chưa có bằng chứng thắng** (bot hết giờ ở 5/7 đèn; chưa ghi lại lượt chơi tay nào thắng) |
 | Chuỗi 3 đêm, menu, giới thiệu Ông Đăng, kết quả, Bình Minh, tạm dừng, cài đặt lưu, âm thanh | Chạy bản web | [web_night1.png](web_night1.png), [web_night2.png](web_night2.png), [web_night3.png](web_night3.png) + chơi tay | Đạt (kiểm tay) |
 | HUD đầy đủ + bảng màu chuẩn + ánh sáng 0.15 + 0.55 × tiến độ | Ảnh + đọc mã (`C` palette, `amb.intensity`) | [web_night3.png](web_night3.png) | Đạt (kiểm tay) |
 

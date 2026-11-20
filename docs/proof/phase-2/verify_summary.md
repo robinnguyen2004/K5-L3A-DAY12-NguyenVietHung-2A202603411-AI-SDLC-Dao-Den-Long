@@ -2,7 +2,7 @@
 
 | Requirement | Check | Result | Detail |
 |---|---|---|---|
-| Unit tests (contract v1.1) | python3 -m unittest discover -s tests | PASS | `Ran 39 tests in 1.492s / OK` |
+| Unit tests (contract v1.1) | python3 -m unittest discover -s tests | PASS | `Ran 44 tests in 2.072s / OK` |
 | Pick up (XZ <= 1.0 m) | mote at z=5 picked at tick 40 at 6 m/s | PASS | `[{'type': 'event', 'tick': 40, 'name': 'mote_picked', 'data': {'carried': 10}}]` |
 | Deposit 10 lights a lantern | interact at tick 70 -> deposit 10 + lantern_lit at tick 71 | PASS | `[{'type': 'event', 'tick': 71, 'name': 'deposit', 'data': {'lantern_id': 'L1', 'amount': 10, 'deposited': 10}}]` |
 | Standard score | 10 deposited x 10 + 1 lantern x 100 = 200 | PASS | `{'type': 'end', 'ticks': 120, 'state': 'playing', 'score': 200}` |

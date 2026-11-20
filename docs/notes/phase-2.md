@@ -44,5 +44,11 @@ số chuẩn trong contract (`ContractFile`), bản đồ + đèn + 20 đom đó
 - **Đạt:** số chuẩn, 3 bản đồ, mọi tính năng logic, contract v1.1, chuỗi 3 đêm + menu + tạm dừng + cài đặt lưu + âm thanh tổng hợp + HUD + bảng màu trong bản web.
 - **Bot:** thắng Đêm 1 (seed 1, 7) và Đêm 2 (seed 1, 7). Đêm 3 chưa thắng: seed 42 thắp 5/7 đèn rồi hết giờ. Bục nhảy tầng 2 đã có unit test `Terrain.test_night3_wall_ramp_pad`.
 - **Có hỏng phase trước không:** tick model, mã thoát, tất định, deposit vẫn đúng. Những gì đổi là do ticket thay luật (mục 1).
-- **Chưa làm / giới hạn:** âm thanh là âm tổng hợp đơn giản. Bản web mới kiểm bằng ảnh chụp headless và chạy tay; chưa có test tự động cho UI. Gió báo trước 2 s bằng lá bay và chữ, chưa có âm báo riêng.
+- **Chưa làm / giới hạn:** âm thanh là âm tổng hợp đơn giản. Bản web mới kiểm bằng ảnh chụp headless và chạy tay; chưa có test tự động cho UI. Gió báo trước 2 s bằng lá bay, chữ và âm thanh (thêm khi rà lại ticket; bản đầu thiếu âm báo).
 - **Lỗi AI và harness:** xem `docs/notes/ai-log.md` (Phase 2).
+
+## 5. Rà lại trước khi nộp (sau tag đầu tiên)
+- Rà từng mục Ticket-02 với code và test. Phát hiện **thiếu âm báo gió** (ticket: "báo trước 2 s bằng lá bay **và âm thanh**"). Đã thêm `wind_warning` và `wind_gust` trong client.
+- Vách đảo dùng màu gỗ chuẩn với độ dao động ±18% (vượt ngưỡng 10% của bảng màu), đã giảm còn ±8%.
+- README ở tag cũ bị một buffer editor cũ ghi đè (hướng dẫn Panda3D đã bỏ), đã khôi phục. Tag `phase-2` được dời sang commit đã sửa, trước khi push lần đầu.
+- Chướng ngại vật và nâng cấp đồ họa chỉ bật ở client 3D; headless tạo lại bằng chứng Phase 2 giống từng byte (`tests/test_extras.py`).
