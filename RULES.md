@@ -1,6 +1,6 @@
 # Quy định Lab: Day 12 (RULES)
 
-> Đọc cùng [README.md](README.md), [SUBMISSION.md](SUBMISSION.md), [RUBRIC.md](RUBRIC.md).
+> Đọc cùng [README.md](LAB.md), [SUBMISSION.md](SUBMISSION.md), [RUBRIC.md](RUBRIC.md).
 > Bài này là bài **cá nhân** (1 MSSV, 1 repo, 1 link nộp).
 
 ---

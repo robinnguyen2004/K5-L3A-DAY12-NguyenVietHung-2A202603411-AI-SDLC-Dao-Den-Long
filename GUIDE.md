@@ -1,6 +1,6 @@
 # Hướng dẫn làm lab (GUIDE)
 
-Bài **cá nhân**. Đọc cùng [README.md](README.md). Mốc tự kiểm tra: [CHECKPOINTS.md](CHECKPOINTS.md). Nộp bài: [SUBMISSION.md](SUBMISSION.md). Quy định: [RULES.md](RULES.md). Chấm điểm: [RUBRIC.md](RUBRIC.md).
+Bài **cá nhân**. Đọc cùng [README.md](LAB.md). Mốc tự kiểm tra: [CHECKPOINTS.md](CHECKPOINTS.md). Nộp bài: [SUBMISSION.md](SUBMISSION.md). Quy định: [RULES.md](RULES.md). Chấm điểm: [RUBRIC.md](RUBRIC.md).
 
 Tài liệu này chỉ đưa **gợi ý**. Công cụ AI, ngôn ngữ, engine, cách tổ chức thư mục và định dạng tài liệu đều do bạn chọn.
 
