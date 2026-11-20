@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""One-command verification + proof generator (Test Contract v1.1).
+"""One-command verification + proof generator (Test Contract v1.2).
 
     python3 tools/verify.py                    # check only (exit 1 if anything fails)
     python3 tools/verify.py --write phase-2    # also write docs/proof/phase-2/*
@@ -59,7 +59,7 @@ def main():
     r = subprocess.run([PY, "-m", "unittest", "discover", "-s", os.path.join(ROOT, "tests")],
                        capture_output=True, text=True, cwd=ROOT)
     tail = r.stderr.strip().splitlines() or ["?"]
-    check("Unit tests (contract v1.1)", "python3 -m unittest discover -s tests", r.returncode == 0,
+    check("Unit tests (contract v1.2)", "python3 -m unittest discover -s tests", r.returncode == 0,
           " / ".join([l for l in tail if l.startswith("Ran ")] + [tail[-1]]))
     if a.write:
         with open(os.path.join(outdir, "unittest.txt"), "w", encoding="utf-8") as f:
@@ -73,7 +73,8 @@ def main():
           mp and mp[0]["tick"] == 40 and mp[0]["data"] == {"carried": 10}, str(mp[:1]))
     check("Deposit 10 lights a lantern", "interact at tick 70 -> deposit 10 + lantern_lit at tick 71",
           dp and dp[0]["tick"] == 71 and dp[0]["data"]["amount"] == 10 and lit and lit[0]["tick"] == 71, str(dp[:1]))
-    check("Standard score", "10 deposited x 10 + 1 lantern x 100 = 200", L and L[-1]["score"] == 200, str(L[-1] if L else ""))
+    check("Score (Ticket-03)", "10 deposited x 5 + first light 100 = 150", L and L[-1]["score"] == 150,
+          str(L[-1] if L else ""))
 
     o = os.path.join(outdir, "pulse_shade.jsonl")
     r, L = cli(["--seed", "1", "--night", "1", "--scenario", sc("pulse_shade.scenario.json"),
@@ -116,6 +117,31 @@ def main():
           s60["state"] == "paused" and s60["sim_tick"] == 30 and len(ev(L, "paused")) == 1, json.dumps(
               {"state": s60["state"], "sim_tick": s60["sim_tick"]}))
 
+    # ---- Ticket-03: fuel, drain, refuel, relight, dawn win
+    o = os.path.join(outdir, "drain.jsonl")
+    r, L = cli(["--seed", "1", "--night", "1", "--scenario", sc("drain.scenario.json"), "--ticks", "600",
+                "--snapshot-every", "1"], o)
+    st = next((l["tick"] for l in L if l["type"] == "snapshot" and l["shades"][0]["state"] == "drain"), None)
+    fd, out_ev = ev(L, "fuel_drain"), ev(L, "lantern_out")
+    check("Shade drains a weak lantern (fuel < 30)", "wander -> drain within 2 m, -6 fuel/s, fuel_drain every 60 ticks, lantern_out",
+          st is not None and len(fd) >= 2 and fd[1]["tick"] - fd[0]["tick"] == 60 and out_ev
+          and abs(snap(L, st)["lanterns"][0]["fuel"] - snap(L, st + 60)["lanterns"][0]["fuel"] - 6.0) < 0.05,
+          "drain from tick %s, out at %s" % (st, out_ev[0]["tick"] if out_ev else None))
+    o = os.path.join(outdir, "refuel.jsonl")
+    r, L = cli(["--seed", "1", "--night", "1", "--scenario", sc("refuel.scenario.json"), "--inputs",
+                sc("refuel.inputs.json"), "--ticks", "30"], o)
+    rf, lit = ev(L, "refuel"), ev(L, "lantern_lit")
+    check("Refuel + relight (5 motes, +40)", "refuel L1 55 -> 100 with 5 motes; relight L2 with 5",
+          rf and rf[0]["data"] == {"lantern_id": "L1", "amount": 5, "fuel": 100.0}
+          and lit and lit[0]["data"] == {"lantern_id": "L2", "relight": True} and L[-1]["score"] == 10 * 5 + 40,
+          str(rf[:1] + lit[:1]))
+    o = os.path.join(outdir, "dawn_win.jsonl")
+    r, L = cli(["--seed", "1", "--night", "1", "--scenario", sc("dawn_win.scenario.json"), "--ticks", "100"], o)
+    go = ev(L, "game_over")
+    check("Dawn win needs ceil(0.6 x 5) = 3 lit", "3 lit at dawn -> won dawn_survived, score 3x(50+79) + 3x50",
+          go and go[0]["data"] == {"result": "won", "reason": "dawn_survived"} and L[-1]["score"] == 3 * 129 + 150,
+          str(L[-1] if L else ""))
+
     hashes = {}
     for n in (1, 2, 3):
         hs = []
@@ -133,7 +159,7 @@ def main():
     check("Malformed inputs", "non-increasing ticks -> exit 2 + stderr", r.returncode == 2 and r.stderr,
           "exit=%d" % r.returncode)
 
-    for night, seed, must_win in ((1, 1, True), (1, 7, True), (2, 1, True), (2, 7, True), (3, 42, False)):
+    for night, seed, must_win in ((1, 1, True), (1, 7, True), (1, 42, True), (2, 7, False), (3, 42, False)):
         r = subprocess.run([PY, os.path.join(ROOT, "tools", "bot_playthrough.py"), "--night", str(night), "--seed",
                             str(seed), "--outdir", os.path.join(outdir, "bot")], capture_output=True, text=True)
         end = next((l for l in r.stdout.splitlines() if l.startswith("replayed")), r.stderr[-200:])

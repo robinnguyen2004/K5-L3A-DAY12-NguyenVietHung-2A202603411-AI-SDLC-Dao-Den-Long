@@ -29,8 +29,9 @@ def record(seed, max_ticks, night=1):
             fr.update({f: v for f, v in cur.items() if last is None or last[f] != v})
             frames.append(fr)
             last = cur
-            # replay must see exactly these rounded values
-            inp.move = tuple(cur["move"])
+        # the replay sees exactly these rounded values on EVERY tick (the old code only rounded on
+        # ticks that emitted a frame, so record and replay could drift apart)
+        inp.move = tuple(cur["move"])
         sim.step(inp)
         if sim.state in ("won", "lost"):
             break

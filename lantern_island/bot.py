@@ -109,15 +109,27 @@ class Bot:
             return self.inp
         px, pz = p["x"], p["z"]
         unlit = [l for l in sim.lanterns if not l["lit"]]
-        need = min((t["lantern_cost"] - l["deposited"] for l in unlit), default=0)
+        need = min((sim.cost(l) - l["deposited"] for l in unlit), default=0)
+        cap = sim.capacity()
+        # Ticket-03: keep lanterns burning until dawn; refuel weak ones before lighting new ones
+        weak = [l for l in sim.lanterns if l["lit"] and l["fuel"] < 60 * 60]
+        if sum(1 for l in sim.lanterns if l["lit"]) >= sim.lit_needed() + 1:
+            unlit = []  # enough lanterns burning: spend light on fuel instead of new lanterns
         motes = [m for m in sim.motes if abs(m["y"] - p["y"]) <= 1.5 or True]
         want_interact = False
         goal = None
         # drifters steal 3 when we carry >= 5, so bank light early while one is around
         thief_near = any(d["state"] in ("idle", "chase") and hdist(px, pz, d["x"], d["z"]) < 25 for d in sim.drifters)
         bank = thief_near and p["carried"] >= 4
-        if unlit and (p["carried"] >= need or p["carried"] >= t["carry_capacity"] or not motes or bank):
-            lan = min(unlit, key=lambda l: self.cost(sim, l["x"], l["y"], l["z"]))
+        target_pool = None
+        if weak and p["carried"] >= 3:
+            target_pool = weak
+        elif unlit and (p["carried"] >= need or p["carried"] >= cap or not motes or bank):
+            target_pool = unlit
+        elif bank and weak:
+            target_pool = weak
+        if target_pool:
+            lan = min(target_pool, key=lambda l: self.cost(sim, l["x"], l["y"], l["z"]))
             goal = (lan["x"], lan["y"], lan["z"])
             want_interact = (hdist(px, pz, lan["x"], lan["z"]) <= t["interact_radius"] - 0.4
                              and abs(p["y"] - lan["y"]) < 0.5)

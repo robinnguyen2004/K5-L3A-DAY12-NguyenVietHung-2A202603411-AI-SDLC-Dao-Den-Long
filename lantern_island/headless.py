@@ -1,4 +1,4 @@
-"""Headless runner per Test Contract v1.1 (--night 1|2|3).
+"""Headless runner per Test Contract v1.2 (--night 1|2|3).
 
 <cmd> --seed N --night 1 [--scenario f.json] [--inputs f.json] --ticks N --out f.jsonl
       [--snapshot-every N (default 10)]
@@ -77,7 +77,8 @@ def load_scenario(path):
             raise InputError("scenario: 'player' must be an object")
         if "pos" in p and not _vec3(p["pos"]):
             raise InputError("scenario: player.pos must be [x, y, z]")
-        for k in ("carried", "flames", "invuln_ticks", "dash_cd_ticks", "pulse_cd_ticks", "charm_ticks"):
+        for k in ("carried", "flames", "invuln_ticks", "dash_cd_ticks", "pulse_cd_ticks", "charm_ticks",
+                  "successful_lights"):
             if k in p and not _int(p[k]):
                 raise InputError("scenario: player.%s must be a non-negative integer" % k)
     for k in ("random_motes", "random_shades", "random_drifters", "wind_enabled"):
@@ -94,7 +95,8 @@ def load_scenario(path):
             if not isinstance(s, dict) or ("pos" in s and not _vec3(s["pos"])) \
                     or ("id" in s and not isinstance(s["id"], str)) \
                     or ("state" in s and s["state"] not in SHADE_STATES) \
-                    or ("state_ticks_left" in s and not _int(s["state_ticks_left"])):
+                    or ("state_ticks_left" in s and not _int(s["state_ticks_left"])) \
+                    or ("target_lantern_id" in s and not isinstance(s["target_lantern_id"], str)):
                 raise InputError("scenario: each shade must be {pos, id?, state?, state_ticks_left?}")
     if "drifters" in sc:
         if not isinstance(sc["drifters"], list):
@@ -122,6 +124,10 @@ def load_scenario(path):
                 raise InputError("scenario: lantern.pos must be [x, y, z]")
             if "lit" in l and not isinstance(l["lit"], bool):
                 raise InputError("scenario: lantern.lit must be a boolean")
+            if "ever_lit" in l and not isinstance(l["ever_lit"], bool):
+                raise InputError("scenario: lantern.ever_lit must be a boolean")
+            if "fuel" in l and (not _num(l["fuel"]) or not 0 <= l["fuel"] <= 100):
+                raise InputError("scenario: lantern.fuel must be a number in [0, 100]")
             if "deposited" in l and (not isinstance(l["deposited"], int) or isinstance(l["deposited"], bool)
                                      or l["deposited"] < 0):
                 raise InputError("scenario: lantern.deposited must be a non-negative integer")

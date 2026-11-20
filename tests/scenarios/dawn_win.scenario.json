@@ -1,0 +1,3 @@
+{"random_motes": false, "random_shades": false, "random_drifters": false, "motes": [], "shades": [],
+ "lanterns": [{"id": "L1", "lit": true, "fuel": 80}, {"id": "L2", "lit": true, "fuel": 80}, {"id": "L3", "lit": true, "fuel": 80}],
+ "time_left_s": 1}

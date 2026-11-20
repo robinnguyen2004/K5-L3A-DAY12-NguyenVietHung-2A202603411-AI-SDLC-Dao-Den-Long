@@ -59,13 +59,14 @@ class DecorObstacles(unittest.TestCase):
     def test_layout_is_fixed(self):
         self.assertEqual(make_level(3).decor, make_level(3).decor)
 
-    def test_headless_reproduces_phase2_proof(self):
-        """Adding decor must not change contract output: re-run a committed Phase 2 proof scenario."""
+    def test_headless_reproduces_committed_proof(self):
+        """Decor must not change contract output: re-run a committed proof scenario byte-for-byte.
+        Ticket-03 changed the rules, so the reference moved from docs/proof/phase-2 to docs/proof/phase-3."""
         sc_dir = os.path.join(ROOT, "tests", "scenarios")
         buf = io.StringIO()
         run(1, load_scenario(os.path.join(sc_dir, "pickup_and_light.scenario.json")),
             load_inputs(os.path.join(sc_dir, "pickup_and_light.inputs.json")), 120, 10, buf, night=1)
-        with open(os.path.join(ROOT, "docs", "proof", "phase-2", "pickup_and_light.jsonl"), encoding="utf-8") as f:
+        with open(os.path.join(ROOT, "docs", "proof", "phase-3", "pickup_and_light.jsonl"), encoding="utf-8") as f:
             self.assertEqual(buf.getvalue(), f.read().replace("\r\n", "\n"))
 
 

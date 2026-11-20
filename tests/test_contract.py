@@ -1,6 +1,9 @@
-"""Test Contract v1.1 (Ticket-02) tests. Run: python3 -m unittest discover -s tests -v
+"""Test Contract v1.1 (Ticket-02) tests, updated for v1.2 (Ticket-03).
+Run: python3 -m unittest discover -s tests -v
 
 Phase 1 (v1.0) tests were superseded by Ticket-02's standard numbers; see docs/notes/phase-2.md.
+Tests changed by Ticket-03 carry a "Ticket-03:" comment explaining why (docs/notes/phase-3.md).
+New Phase 3 rules (fuel, drain, dawn win, capacity) are in tests/test_phase3.py.
 """
 import io
 import json
@@ -159,7 +162,8 @@ class Lanterns(unittest.TestCase):
                       frames=press(0, "interact"), ticks=3)
         self.assertEqual(events(out, "deposit")[0]["data"], {"lantern_id": "L1", "amount": 6, "deposited": 10})
         self.assertEqual(events(out, "lantern_lit")[0]["tick"], 1)
-        self.assertEqual(out[-1]["score"], 6 * 10 + 100)
+        # Ticket-03: each deposited mote now scores +5 (was +10); first light still +100
+        self.assertEqual(out[-1]["score"], 6 * 5 + 100)
         self.assertEqual(snap(out, 3)["player"]["carried"], 4)
 
     def test_nearest_then_lower_id(self):
@@ -170,12 +174,15 @@ class Lanterns(unittest.TestCase):
         out = sim_run(sc, frames=press(0, "interact"), ticks=2)
         self.assertEqual(events(out, "deposit")[0]["data"]["lantern_id"], "L2")
 
-    def test_win_beats_dawn_same_tick(self):
-        lans = [{"id": "L%d" % i, "lit": True} for i in range(2, 6)] + [{"id": "L1", "pos": [0, 0, 1], "deposited": 9}]
+    def test_lighting_on_the_dawn_tick_counts(self):
+        # Ticket-03 replaced "win as soon as all lanterns are lit" (reason all_lit is gone). Kept the
+        # Ticket-02 idea that the final tick still counts: lighting the 3rd lantern on the dawn tick wins.
+        lans = [{"id": "L2", "lit": True}, {"id": "L3", "lit": True}, {"id": "L1", "pos": [0, 0, 1], "deposited": 9}]
         out = sim_run({"player": {"carried": 1}, "lanterns": lans, "time_left_s": 1 / 60},
                       frames=press(0, "interact"), ticks=10)
-        self.assertEqual(events(out, "game_over")[0]["data"], {"result": "won", "reason": "all_lit"})
-        self.assertEqual(out[-1]["score"], 10 + 100 + 0 * 2 + 50 * 3)
+        self.assertEqual(events(out, "game_over")[0]["data"], {"result": "won", "reason": "dawn_survived"})
+        # 1 mote x 5 + first light 100 + dawn: 3 lit x (50 + floor(fuel)) + 3 flames x 50
+        self.assertEqual(out[-1]["score"], 5 + 100 + (50 + 99) * 2 + (50 + 100) + 50 * 3)
 
     def test_dawn(self):
         out = sim_run({"time_left_s": 1}, ticks=200)
@@ -399,18 +406,23 @@ class ContractFile(unittest.TestCase):
     def test_standard_numbers(self):
         with open(os.path.join(ROOT, "game.contract.json"), encoding="utf-8") as f:
             c = json.load(f)
-        self.assertEqual(c["contract_version"], "1.1")
         t = c["tuning"]
+        # Ticket-03: durations 240/270/300 s, new fuel keys, new score table (contract v1.2)
+        self.assertEqual(c["contract_version"], "1.2")
+        for k, v in {"fuel_max": 100, "fuel_decay_per_s": 1.0, "fuel_per_mote": 10, "relight_cost": 5,
+                     "win_ratio": 0.6, "drain_per_s": 5, "low_fuel_threshold": 30, "capacity_max": 20}.items():
+            self.assertEqual(c["tuning"][k], v, k)
         want = {"player_speed": 6.0, "carry_capacity": 10, "lantern_cost": 10, "pickup_radius": 1.0,
                 "interact_radius": 2.0, "pulse_cost": 3, "pulse_radius": 5.0, "pulse_cooldown_s": 3.0,
                 "pulse_stun_s": 2.0, "pulse_push_m": 4.0, "flames": 3, "invuln_s": 1.5, "safe_radius": 6.0,
                 "shade_speed": 4.0, "shade_hit_radius": 1.0, "fall_enabled": True, "dash_speed": 14.0,
-                "dash_duration_s": 0.2, "dash_cooldown_s": 1.5, "night1_duration_s": 300,
-                "night2_duration_s": 330, "night3_duration_s": 360, "hit_drop_ratio": 0.5}
+                "dash_duration_s": 0.2, "dash_cooldown_s": 1.5, "night1_duration_s": 240,
+                "night2_duration_s": 270, "night3_duration_s": 300, "hit_drop_ratio": 0.5}
         for k, v in want.items():
             self.assertEqual(t[k], v, k)
-        self.assertEqual(t["score"], {"per_mote": 10, "per_lantern": 100, "per_stun": 5,
-                                      "per_second_left": 2, "per_flame_left": 50})
+        self.assertEqual(t["score"], {"per_mote": 5, "per_lantern": 100, "per_relight": 40, "per_stun": 5,
+                                      "per_stun_drain": 15, "per_lit_lantern_dawn": 50, "per_flame_left": 50,
+                                      "per_second_left": 0})
 
 
 if __name__ == "__main__":
