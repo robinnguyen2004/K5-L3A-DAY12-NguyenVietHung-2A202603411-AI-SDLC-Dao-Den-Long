@@ -48,3 +48,10 @@ Phong cách gốc là cảnh ban ngày; game vẫn giữ **đêm** và **bảng 
 - Đo ở 1280×720, DPR 1, Intel Iris Xe.
 - Ảnh chụp bằng SwiftShader (render phần mềm), nên màu và khử răng cưa hơi khác GPU thật.
 - Ảnh chụp lúc mới vào đêm nên đèn chưa sáng; khi thắp đèn, cảnh ấm hơn.
+
+## Cập nhật: chướng ngại vật to hơn nhân vật + camera xoay tự do
+
+- `levels.py`: cây r 0.9 / cao 6.5, cột đá r 0.6 / 4.6, trụ mái ngói r 0.75 / 2.6 (× tỉ lệ 0.85–1.25), đá r 1.2–1.8 / cao 1.9 r. Thấp nhất 2.2 m, Mây cao khoảng 1.9 m. Mỗi đêm có 45–55 vật. Test `test_every_obstacle_is_taller_than_may` thay test cũ "nhảy qua được bia mộ thấp", vì yêu cầu mới làm luật cũ sai.
+- Client: hình 3D được scale theo đúng `h`/`r` của va chạm. Camera quỹ đạo quanh Mây: xoay ngang và dọc (5–75°) bằng chuột khóa, giữ chuột phải kéo hoặc phím mũi tên; lăn chuột để zoom 5–24 m; R để đặt lại. Camera tự kéo gần khi vật cản nằm giữa camera và Mây.
+- Bot (chỉ ở client 3D, khi `sim.decor` khác rỗng) né vật cản. Đêm 1 với vật cản: thắng 2/3 seed (không né: 1/3). Headless không có decor nên proof của bot không đổi: `verify.py` PASS, điểm giống hệt trước.
+- Ảnh: [obstacles_default.png](obstacles_default.png), [camera_low.png](camera_low.png) (`?pitch=8&dist=9`), [camera_high.png](camera_high.png) (`?pitch=65&dist=22`).

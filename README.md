@@ -29,7 +29,8 @@ python3 headless.py --seed 1 --night 1|2|3 [--scenario s.json] [--inputs i.json]
 | Phím | Hành động |
 |---|---|
 | W A S D | Đi theo hướng camera |
-| Chuột (bấm vào màn hình để khóa) / ← → | Xoay camera; độ nhạy chỉnh trong Cài đặt |
+| Chuột (bấm vào màn hình để khóa) hoặc giữ chuột phải kéo / ← → ↑ ↓ | Xoay camera ngang và dọc quanh Mây (cả khi xem bot chơi); độ nhạy chỉnh trong Cài đặt |
+| Lăn chuột · R | Camera gần/xa (5–24 m) · Đặt lại góc nhìn |
 | Space · Shift | Nhảy · Lướt (14 m/s trong 0.2 s, hồi 1.5 s) |
 | E | Nạp ánh sáng vào đèn tắt, hoặc **châm dầu** cho đèn đang sáng (trong 2 m) |
 | Q / chuột trái | Tỏa Sáng: tốn 3 đom đóm, làm choáng Bóng Mực trong 5 m |
@@ -80,7 +81,7 @@ tools/fps_bench.py          đo FPS thật của client web (bot chơi Đêm 3)
 Không mục nào làm đổi đầu ra headless:
 
 1. **Mây là một cô phù thủy nhỏ** (dựa trên ảnh tham khảo của tôi). Nhân vật dựng thành rig có hoạt ảnh đi, nhảy, lướt và giơ tay khi tỏa sáng. Có áo choàng kem viền vàng, khăn đỏ có hai đuôi bay, mặt tối với ngôi sao phát sáng, gậy phép đầu xoắn ốc. Nón lá vẫn giữ (PRD-0), có gân, dải đỏ và đỉnh gập kiểu phù thủy, kèm đèn lồng treo.
-2. **Chướng ngại vật thật:** cụm cây trứng, cột đá xếp tầng, trụ đá mái ngói, đá xếp tầng chặn đường Mây; trụ đá và đá nhỏ thì nhảy qua được.
+2. **Chướng ngại vật thật, to hơn nhân vật:** cụm cây trứng (~6.5 m), cột đá xếp tầng (~4.6 m), trụ đá mái ngói (~2.6 m), đá xếp tầng (2.3–3.4 m) chặn đường Mây; không vật nào thấp hơn 2.2 m nên không nhảy qua được. Hình 3D và vùng va chạm cùng kích thước. Camera tự kéo lại gần khi bị vật cản che.
    - Va chạm nằm trong `sim.py` nhưng chỉ bật ở client 3D (`Sim(extras=True)`).
    - Headless không có chướng ngại. Test `test_headless_reproduces_phase2_proof` chạy lại scenario Phase 2 và so từng byte.
    - Vị trí cố định theo đêm, chừa trống quanh đèn, điểm sinh đom đóm, cầu và dốc.

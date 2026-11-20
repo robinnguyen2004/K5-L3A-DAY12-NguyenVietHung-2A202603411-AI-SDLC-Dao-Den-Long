@@ -95,7 +95,7 @@
     <p>Sương đen đã nuốt ánh sáng của ba hòn đảo giữa biển mây. Hãy giúp Mây, cô phù thủy giữ đèn, thắp lại các Đèn Lồng Lớn và giữ chúng cháy tới bình minh. Đèn cạn dầu dần, còn Bóng Mực thì hút dầu những ngọn đèn yếu.</p>
     <table class="keys">
       <tr><td><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></td><td>Đi theo hướng camera</td></tr>
-      <tr><td>Chuột / <kbd>←</kbd><kbd>→</kbd></td><td>Xoay camera (bấm vào màn hình để khóa chuột)</td></tr>
+      <tr><td>Chuột / giữ chuột phải kéo / <kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd></td><td>Xoay camera ngang + dọc (bấm vào màn hình để khóa chuột) · lăn chuột: gần/xa · <kbd>R</kbd>: đặt lại</td></tr>
       <tr><td><kbd>Space</kbd> · <kbd>Shift</kbd></td><td>Nhảy · Lướt</td></tr>
       <tr><td><kbd>E</kbd> · <kbd>Q</kbd></td><td>Nạp ánh sáng vào đèn · Tỏa sáng (tốn 3 đom đóm)</td></tr>
       <tr><td><kbd>Esc</kbd> / <kbd>P</kbd> · <kbd>F3</kbd></td><td>Tạm dừng · Hiện FPS</td></tr>
@@ -523,8 +523,8 @@ function tuftGeo(col, n, h, rnd) {
 }
 const DECOR_GEO = (() => {
   const r = mulberry32(11);
-  const pine = ao(merge([...eggTree(0, 0, 1.15, ART.leaf, r), ...eggTree(0.95, 0.4, 0.55, ART.leafLight, r),
-    ...eggTree(-0.75, -0.55, 0.5, ART.leafDark, r)]), 3.0);
+  const pine = ao(merge([...eggTree(0, 0, 1.15, ART.leaf, r), ...eggTree(0.55, 0.25, 0.55, ART.leafLight, r),
+    ...eggTree(-0.45, -0.35, 0.5, ART.leafDark, r)]), 3.0);
   const deadtree = ao(merge([soft(at(rbox(0.95, 0.22, 0.95, 0.05), 0, 0.11, 0), ART.stoneDark, r),
     soft(at(taper(rbox(0.7, 2.3, 0.7, 0.12), 0.88), 0, 1.37, 0), ART.stoneMid, r),
     soft(at(rbox(0.62, 0.5, 0.62, 0.18), 0, 2.75, 0), ART.stone, r),
@@ -612,8 +612,11 @@ function grassTufts(count, rnd, inside) {
   }
   meshes.forEach((mesh, k) => { mesh.count = n[k]; world.add(mesh); });
 }
+let decorItems = [];
+const DECOR_H = { pine: 4.03, deadtree: 3.27, grave: 1.09, rock: 1.75 };  // model heights at scale 1
 function buildDecor(night) {
   const items = JSON.parse(decorFn(night)), byKind = {};
+  decorItems = items;
   for (const d of items) (byKind[d.kind] = byKind[d.kind] || []).push(d);
   const m = new THREE.Matrix4(), q = new THREE.Quaternion();
   for (const [kind, list] of Object.entries(byKind)) {
@@ -621,9 +624,10 @@ function buildDecor(night) {
     const shadows = new THREE.InstancedMesh(blobGeo, blobMat, list.length);
     list.forEach((d, i) => {
       q.setFromEuler(new THREE.Euler(0, d.rot, 0));
-      const s = kind === "rock" ? new THREE.Vector3(d.r, d.r, d.r) : new THREE.Vector3(d.s, d.s, d.s);
+      // model height -> obstacle height from levels.py (collision and visuals match; all taller than Mây)
+      const k = d.h / DECOR_H[kind], s = kind === "rock" ? new THREE.Vector3(d.r, k, d.r) : new THREE.Vector3(k, k, k);
       m.compose(V(d.x, d.y, d.z), q, s); mesh.setMatrixAt(i, m);
-      const bs = kind === "pine" ? 3.6 * d.s : kind === "deadtree" ? 1.6 * d.s : kind === "rock" ? d.r * 3.0 : 1.3 * d.s;
+      const bs = d.r * (kind === "pine" ? 4.2 : kind === "rock" ? 3.0 : 2.8);
       m.compose(V(d.x, d.y + 0.02, d.z), new THREE.Quaternion(), new THREE.Vector3(bs, 1, bs)); shadows.setMatrixAt(i, m);
     });
     world.add(mesh, shadows);
@@ -928,20 +932,27 @@ function makeCharm() {
 // ---------------------------------------------------------------- input
 const keys = {};
 let camYaw = 0, locked = false;
+const CAM = { pitch: 27, dist: 12.5, drag: false };  // orbit camera: pitch 5..75 deg, distance 5..24 m
+const camReset = () => { camYaw = game.st ? camYaw : 0; CAM.pitch = 27; CAM.dist = 12.5; };
+const camTurn = (dx, dy) => { const k = settings.sensitivity * 0.006; camYaw += dx * k; CAM.pitch = Math.min(75, Math.max(5, CAM.pitch + dy * k)); };
 addEventListener("keydown", (e) => {
   if (["Space", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Tab", "F3"].includes(e.code)) e.preventDefault();
   keys[e.code] = true;
   if ((e.code === "Escape" || e.code === "KeyP") && (game.mode === "play" || game.mode === "paused")) togglePause();
   if (e.code === "Enter" && game.mode === "intro") beginNight();
   if (e.code === "F3") { settings.showFps = !settings.showFps; saveSettings(); syncSettingsUI(); }
+  if (e.code === "KeyR" && game.mode === "play") camReset();
 });
 addEventListener("keyup", (e) => { keys[e.code] = false; });
 addEventListener("blur", () => { for (const k in keys) keys[k] = false; if (game.mode === "play" && !Q.has("bench")) togglePause(); });
 renderer.domElement.addEventListener("click", () => { if (game.mode === "play" && !game.demo) renderer.domElement.requestPointerLock?.(); });
 document.addEventListener("pointerlockchange", () => { locked = document.pointerLockElement === renderer.domElement; });
-addEventListener("mousemove", (e) => { if (locked && game.mode === "play") camYaw += e.movementX * settings.sensitivity * 0.006; });
-addEventListener("mousedown", (e) => { if (locked && e.button === 0) keys.Mouse0 = true; });
-addEventListener("mouseup", (e) => { if (e.button === 0) keys.Mouse0 = false; });
+addEventListener("mousemove", (e) => { if (game.mode === "play" && (locked || CAM.drag)) camTurn(e.movementX, e.movementY); });
+addEventListener("mousedown", (e) => { if (locked && e.button === 0) keys.Mouse0 = true;
+  if (e.button === 2 || (game.demo && e.button === 0)) CAM.drag = true; });  // right-drag orbits without pointer lock (also while watching the bot)
+addEventListener("mouseup", (e) => { if (e.button === 0) keys.Mouse0 = false; if (e.button === 2 || e.button === 0) CAM.drag = false; });
+renderer.domElement.addEventListener("contextmenu", (e) => e.preventDefault());
+addEventListener("wheel", (e) => { if (game.mode === "play") CAM.dist = Math.min(24, Math.max(5, CAM.dist * (1 + Math.sign(e.deltaY) * 0.1))); }, { passive: true });
 
 // ---------------------------------------------------------------- campaign flow
 const NIGHTS = {
@@ -970,7 +981,7 @@ function beginNight() {
   // one light per lantern created up front: lighting a lantern then only changes intensity (no shader recompile hitch)
   lanternLights = game.st.lanterns.map(() => { const L = new THREE.PointLight(C.lit, 0, 42, 1.1); world.add(L); return L; });
   game.st.lanterns.forEach((l, i) => { objs.lanterns[l.id] = makeLantern(l, lanternLights[i]); });
-  camYaw = 0; game.acc = 0; game.pulseT = 1; game.lastSec = null; game.ended = false;
+  camYaw = +(Q.get("yaw") || 0); CAM.pitch = +(Q.get("pitch") || 27); CAM.dist = +(Q.get("dist") || 12.5); game.acc = 0;  // ?yaw ?pitch ?dist: debug views game.pulseT = 1; game.lastSec = null; game.ended = false;
   show("intro", false); show("hud"); game.mode = "play";
   $("nightname").textContent = NIGHTS[game.night].name + (game.demo ? " · bot đang chơi" : "");
   renderer.compile(scene, camera);
@@ -1099,8 +1110,17 @@ function sync(dt) {
   } else if (Q.has("closeup")) {  // debug view to inspect the character model
     camera.position.copy(V(p.pos[0] + 2.2, cy + 1.9, p.pos[2] + 2.6)); camera.lookAt(V(p.pos[0], cy + 1.1, p.pos[2]));
   } else {
-    camera.position.copy(V(p.pos[0] - 11 * Math.sin(yaw), cy + 7.0, p.pos[2] - 11 * Math.cos(yaw)));
-    camera.lookAt(V(p.pos[0], cy + 1.4, p.pos[2]));
+    // orbit around Mây; pull in when a solid obstacle stands between her and the camera
+    const pr = CAM.pitch * Math.PI / 180, hx = -Math.sin(yaw) * Math.cos(pr), hz = -Math.cos(yaw) * Math.cos(pr), ty = cy + 1.4;
+    let dist = CAM.dist;
+    for (const d of decorItems) {
+      const ox = d.x - p.pos[0], oz = d.z - p.pos[2], hl = Math.hypot(hx, hz), along = (ox * hx + oz * hz) / (hl * hl);
+      if (along <= 0 || along * hl > dist * hl + d.r) continue;
+      const px = hx * along - ox, pz = hz * along - oz;
+      if (Math.hypot(px, pz) < d.r + 0.5 && ty + Math.sin(pr) * along < d.y + d.h) dist = Math.max(3, Math.min(dist, along - (d.r + 0.6) / hl));
+    }
+    camera.position.copy(V(p.pos[0] + hx * dist, ty + Math.sin(pr) * dist, p.pos[2] + hz * dist));
+    camera.lookAt(V(p.pos[0], ty, p.pos[2]));
   }
 
   syncEntities("motes", st.motes, (m) => makeMote(m.kind), (o, m) => {
@@ -1216,7 +1236,8 @@ function frame(now) {
   const dt = Math.min((now - (frame.last || now)) / 1000, 0.1); frame.last = now; game.t += dt;
   trackFps(dt, now);
   if (game.mode === "play" && game.st) {
-    if (!game.demo) { if (keys.ArrowLeft) camYaw -= 90 * dt; if (keys.ArrowRight) camYaw += 90 * dt; }
+    if (keys.ArrowLeft) camYaw -= 90 * dt; if (keys.ArrowRight) camYaw += 90 * dt;  // the bot ignores camYaw, so the demo can orbit too
+    if (keys.ArrowUp) CAM.pitch = Math.max(5, CAM.pitch - 45 * dt); if (keys.ArrowDown) CAM.pitch = Math.min(75, CAM.pitch + 45 * dt);
     game.acc += dt;
     let n = 0;
     while (game.acc >= 1 / 60 && n < 6) { game.acc -= 1 / 60; n++; }

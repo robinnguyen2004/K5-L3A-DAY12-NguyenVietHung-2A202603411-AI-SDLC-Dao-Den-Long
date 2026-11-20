@@ -38,10 +38,13 @@ class DecorObstacles(unittest.TestCase):
         d, inside = walk_into(False)
         self.assertTrue(inside, "headless: decor does not exist")
 
-    def test_can_jump_over_low_grave(self):
-        lvl = make_level(1)
-        g = next(o for o in lvl.decor if o["kind"] == "grave")
-        self.assertLess(g["h"], 7.0 ** 2 / 40)  # lower than the 1.225 m jump apex
+    def test_every_obstacle_is_taller_than_may(self):
+        # user request after Phase 3: obstacles bigger than the character (replaces the old "jump over a low grave"
+        # test). Mây is ~1.9 m with the hat; the jump apex is 7^2 / (2 * 20) = 1.225 m, so nothing is jumpable.
+        for night in (1, 2, 3):
+            for o in make_level(night).decor:
+                self.assertGreater(o["h"], 2.0, o)
+                self.assertGreater(o["h"], 7.0 ** 2 / 40)
 
     def test_decor_keeps_routes_clear(self):
         for night in (1, 2, 3):

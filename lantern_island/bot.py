@@ -92,9 +92,17 @@ class Bot:
         for deg in (0, 30, -30, 60, -60, 90, -90, 135, -135, 180):
             a = math.radians(deg)
             vx, vz = ux * math.cos(a) - uz * math.sin(a), ux * math.sin(a) + uz * math.cos(a)
-            if self._ground(sim, px + vx * look, pz + vz * look):
+            if self._ground(sim, px + vx * look, pz + vz * look) and \
+                    self._clear(sim, px + vx * 0.9, pz + vz * 0.9) and self._clear(sim, px + vx * 1.8, pz + vz * 1.8):
                 return vx * ln, vz * ln
         return 0.0, 0.0
+
+    @staticmethod
+    def _clear(sim, x, z):
+        """3D client only: steer around solid decor. Headless sims have no decor (sim.decor == []),
+        so this never changes headless runs or the committed bot proofs."""
+        p = sim.p
+        return all(hdist(x, z, d["x"], d["z"]) > d["r"] + 0.45 or p["y"] >= d["y"] + d["h"] - 0.05 for d in sim.decor)
 
     @staticmethod
     def _active(s, p):

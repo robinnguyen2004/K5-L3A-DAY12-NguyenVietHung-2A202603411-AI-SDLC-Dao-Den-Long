@@ -59,7 +59,8 @@ class Level:
             return self._decor
         rng = random.Random(1000 + self.night)  # same layout every game
         items = []
-        kinds = (("pine", 0.55, 4.6, 0.35), ("deadtree", 0.35, 3.2, 0.2), ("grave", 0.5, 1.0, 0.25),
+        # every obstacle is taller than Mây (~1.9 m): egg-tree cluster, stone pillar, roofed shrine post, stepped rock
+        kinds = (("pine", 0.9, 6.5, 0.35), ("deadtree", 0.6, 4.6, 0.2), ("grave", 0.75, 2.6, 0.25),
                  ("rock", 0.0, 0.0, 0.2))
         keep_out = ([(l[1][0], l[1][2], 5.0) for l in self.lanterns] +
                     [(p[0], p[2], 2.5) for p in self.mote_points] + [(p[0], p[2], 2.5) for p in self.shade_points] +
@@ -78,8 +79,8 @@ class Level:
                     break
             s = rng.uniform(0.85, 1.25)
             if kind == "rock":
-                r, h = rng.uniform(0.5, 1.0), 0.0
-                h = r * 1.1
+                r = rng.uniform(1.2, 1.8)
+                h = r * 1.9
             else:
                 r, h = r * s, h * s
             base = self.column_top(x, z)
