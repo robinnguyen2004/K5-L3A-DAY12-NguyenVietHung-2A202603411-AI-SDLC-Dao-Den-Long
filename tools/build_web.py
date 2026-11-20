@@ -12,7 +12,8 @@ import json
 import os
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SOURCES = ["game.contract.json", "lantern_island/__init__.py", "lantern_island/sim.py", "lantern_island/bot.py"]
+SOURCES = ["game.contract.json", "lantern_island/__init__.py", "lantern_island/levels.py", "lantern_island/sim.py",
+           "lantern_island/bot.py"]
 OUT = os.path.join(ROOT, "web", "dao-den-long.html")
 
 

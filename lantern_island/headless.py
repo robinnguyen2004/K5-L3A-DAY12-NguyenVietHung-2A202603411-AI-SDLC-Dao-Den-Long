@@ -1,4 +1,4 @@
-"""Headless runner per Test Contract v1.0.
+"""Headless runner per Test Contract v1.1 (--night 1|2|3).
 
 <cmd> --seed N --night 1 [--scenario f.json] [--inputs f.json] --ticks N --out f.jsonl
       [--snapshot-every N (default 10)]
@@ -8,7 +8,7 @@ import argparse
 import json
 import sys
 
-from .sim import Sim, Inputs
+from .sim import Sim, Inputs, SHADE_STATES
 
 
 class InputError(Exception):
@@ -52,11 +52,15 @@ def load_inputs(path):
                 raise InputError("inputs: frame %d 'move' must be [x, z] with values in [-1, 1]" % i)
         if "cam_yaw_deg" in fr and not _num(fr["cam_yaw_deg"]):
             raise InputError("inputs: frame %d 'cam_yaw_deg' must be a number" % i)
-        for b in ("jump", "interact", "pulse", "dash"):
+        for b in ("jump", "interact", "pulse", "dash", "pause"):
             if b in fr and not isinstance(fr[b], bool):
                 raise InputError("inputs: frame %d '%s' must be a boolean" % (i, b))
         frames[tk] = fr
     return frames
+
+
+def _int(v):
+    return isinstance(v, int) and not isinstance(v, bool) and v >= 0
 
 
 def _vec3(v):
@@ -73,22 +77,41 @@ def load_scenario(path):
             raise InputError("scenario: 'player' must be an object")
         if "pos" in p and not _vec3(p["pos"]):
             raise InputError("scenario: player.pos must be [x, y, z]")
-        for k in ("carried", "flames"):
-            if k in p and (not isinstance(p[k], int) or isinstance(p[k], bool) or p[k] < 0):
+        for k in ("carried", "flames", "invuln_ticks", "dash_cd_ticks", "pulse_cd_ticks", "charm_ticks"):
+            if k in p and not _int(p[k]):
                 raise InputError("scenario: player.%s must be a non-negative integer" % k)
-    for k in ("random_motes", "random_shades"):
+    for k in ("random_motes", "random_shades", "random_drifters", "wind_enabled"):
         if k in sc and not isinstance(sc[k], bool):
             raise InputError("scenario: '%s' must be a boolean" % k)
     if "motes" in sc:
-        if not isinstance(sc["motes"], list) or not all(_vec3(m) for m in sc["motes"]):
-            raise InputError("scenario: 'motes' must be a list of [x, y, z]")
+        if not isinstance(sc["motes"], list) or not all(
+                _vec3(m) or (isinstance(m, dict) and _vec3(m.get("pos"))) for m in sc["motes"]):
+            raise InputError("scenario: 'motes' must be a list of [x, y, z] (or {pos, kind?, ttl_s?})")
     if "shades" in sc:
         if not isinstance(sc["shades"], list):
             raise InputError("scenario: 'shades' must be a list")
         for s in sc["shades"]:
             if not isinstance(s, dict) or ("pos" in s and not _vec3(s["pos"])) \
-                    or ("id" in s and not isinstance(s["id"], str)):
-                raise InputError("scenario: each shade must be {pos: [x,y,z], id?: str}")
+                    or ("id" in s and not isinstance(s["id"], str)) \
+                    or ("state" in s and s["state"] not in SHADE_STATES) \
+                    or ("state_ticks_left" in s and not _int(s["state_ticks_left"])):
+                raise InputError("scenario: each shade must be {pos, id?, state?, state_ticks_left?}")
+    if "drifters" in sc:
+        if not isinstance(sc["drifters"], list):
+            raise InputError("scenario: 'drifters' must be a list")
+        for d in sc["drifters"]:
+            if not isinstance(d, dict) or ("pos" in d and not _vec3(d["pos"])) \
+                    or ("state" in d and d["state"] not in ("idle", "chase", "flee", "removed")) \
+                    or ("stolen" in d and not _int(d["stolen"])):
+                raise InputError("scenario: each drifter must be {pos, id?, state?, stolen?}")
+    if "charms" in sc:
+        if not isinstance(sc["charms"], list):
+            raise InputError("scenario: 'charms' must be a list")
+        for c in sc["charms"]:
+            if not isinstance(c, dict) or not isinstance(c.get("id"), str) \
+                    or ("pos" in c and not _vec3(c["pos"])) \
+                    or ("available" in c and not isinstance(c["available"], bool)):
+                raise InputError("scenario: each charm must be {id, pos?, available?, respawn_ticks?}")
     if "lanterns" in sc:
         if not isinstance(sc["lanterns"], list):
             raise InputError("scenario: 'lanterns' must be a list")
@@ -112,14 +135,14 @@ def apply_frame(inp, fr):
         inp.move = (float(fr["move"][0]), float(fr["move"][1]))
     if "cam_yaw_deg" in fr:
         inp.cam_yaw_deg = float(fr["cam_yaw_deg"])
-    for b in ("jump", "interact", "pulse"):
+    for b in ("jump", "interact", "pulse", "dash", "pause"):
         if b in fr:
             setattr(inp, b, fr[b])
 
 
-def run(seed, scenario, frames, ticks, snapshot_every, out):
+def run(seed, scenario, frames, ticks, snapshot_every, out, night=1):
     """Run the sim and write JSONL lines to file-like `out`. Returns the Sim."""
-    sim = Sim(seed=seed, scenario=scenario)
+    sim = Sim(seed=seed, night=night, scenario=scenario)
     inp = Inputs()
 
     def w(obj):
@@ -127,6 +150,7 @@ def run(seed, scenario, frames, ticks, snapshot_every, out):
         out.write("\n")
 
     w(sim.snapshot())
+    w({"type": "event", "tick": 0, "name": "night_start", "data": {"night": night}})
     for k in range(ticks):
         if k in frames:
             apply_frame(inp, frames[k])
@@ -134,7 +158,7 @@ def run(seed, scenario, frames, ticks, snapshot_every, out):
             w(ev)
         if sim.tick % snapshot_every == 0:
             w(sim.snapshot())
-        if sim.state != "playing":
+        if sim.state in ("won", "lost"):
             break
     w({"type": "end", "ticks": sim.tick, "state": sim.state, "score": sim.score})
     return sim
@@ -156,8 +180,8 @@ def main(argv=None):
     ap.add_argument("--out", required=True)
     ap.add_argument("--snapshot-every", type=int, default=10)
     a = ap.parse_args(argv)
-    if a.night != 1:
-        sys.stderr.write("error: only --night 1 exists in this build\n")
+    if a.night not in (1, 2, 3):
+        sys.stderr.write("error: --night must be 1, 2 or 3\n")
         return 2
     if a.ticks < 0 or a.snapshot_every <= 0:
         sys.stderr.write("error: --ticks must be >= 0 and --snapshot-every > 0\n")
@@ -170,7 +194,7 @@ def main(argv=None):
         return 2
     try:
         with open(a.out, "w", encoding="utf-8", newline="\n") as out:
-            run(a.seed, scenario, frames, a.ticks, a.snapshot_every, out)
+            run(a.seed, scenario, frames, a.ticks, a.snapshot_every, out, night=a.night)
     except Exception as e:  # noqa: BLE001 - contract: any error -> non-zero + stderr
         sys.stderr.write("error: %s: %s\n" % (type(e).__name__, e))
         return 1
