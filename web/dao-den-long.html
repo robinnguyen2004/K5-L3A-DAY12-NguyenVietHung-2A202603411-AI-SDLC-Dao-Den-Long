@@ -35,7 +35,9 @@
   #nightname { position:fixed; top:56px; left:50%; transform:translateX(-50%); font-size:13px; opacity:.8; }
   #motebar { position:fixed; bottom:18px; left:50%; transform:translateX(-50%); display:flex; gap:4px;
     background:var(--panel); padding:6px 8px; border-radius:10px; }
-  #motebar i { width:18px; height:18px; border-radius:50%; border:1px solid rgba(255,229,138,.5); }
+  #motebar { align-items:center; }
+  #motebar i { width:16px; height:16px; border-radius:50%; border:1px solid rgba(255,229,138,.5); }
+  #motebar b { font-weight:600; margin-left:6px; color:var(--mote); }
   #motebar i.on { background:radial-gradient(circle, #FFF6C2 30%, #FFE58A 70%); box-shadow:0 0 8px #FFE58A; }
   #cds { position:fixed; bottom:16px; right:16px; display:flex; gap:12px; }
   .cd { width:58px; height:58px; border-radius:50%; position:relative; display:flex; align-items:center;
@@ -90,7 +92,7 @@
 <div id="menu" class="overlay">
   <div class="card">
     <h1>Đảo Đèn Lồng</h1>
-    <p>Sương đen đã nuốt ánh sáng của ba hòn đảo giữa biển mây. Hãy giúp Mây, cô phù thủy giữ đèn, thắp lại các Đèn Lồng Lớn trước bình minh.</p>
+    <p>Sương đen đã nuốt ánh sáng của ba hòn đảo giữa biển mây. Hãy giúp Mây, cô phù thủy giữ đèn, thắp lại các Đèn Lồng Lớn và giữ chúng cháy tới bình minh. Đèn cạn dầu dần, còn Bóng Mực thì hút dầu những ngọn đèn yếu.</p>
     <table class="keys">
       <tr><td><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></td><td>Đi theo hướng camera</td></tr>
       <tr><td>Chuột / <kbd>←</kbd><kbd>→</kbd></td><td>Xoay camera (bấm vào màn hình để khóa chuột)</td></tr>
@@ -141,6 +143,7 @@
     <label>Âm lượng: <b id="volVal"></b><input id="vol" type="range" min="0" max="100"></label>
     <label>Độ nhạy chuột: <b id="sensVal"></b><input id="sens" type="range" min="1" max="100"></label>
     <label><input id="showFps" type="checkbox"> Hiện FPS (F3)</label>
+    <label><input id="cbMode" type="checkbox"> Bảng màu dễ phân biệt (mù màu)</label>
     <p style="font-size:13px;opacity:.75">Cài đặt được lưu trên trình duyệt này.</p>
     <button id="btnSettingsClose">Xong</button>
   </div>
@@ -168,19 +171,25 @@ const C = {
 
 // ---------------------------------------------------------------- settings (persisted)
 const SETTINGS_KEY = "dao-den-long.settings";
-const settings = { volume: 70, sensitivity: 40, showFps: false };
+const settings = { volume: 70, sensitivity: 40, showFps: false, cbMode: false };
 try { Object.assign(settings, JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}")); } catch (e) { /* private mode */ }
 if (Q.has("fps") || Q.has("bench")) settings.showFps = true;
+if (Q.has("cb")) settings.cbMode = true;  // debug: colour-blind palette for screenshots
 function saveSettings() { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) { /* ignore */ } }
 function syncSettingsUI() {
   $("vol").value = settings.volume; $("volVal").textContent = settings.volume;
   $("sens").value = settings.sensitivity; $("sensVal").textContent = settings.sensitivity;
   $("showFps").checked = settings.showFps; show("fps", settings.showFps);
+  $("cbMode").checked = settings.cbMode;
+  // Ticket-03: colour-blind mode turns UI warnings white (with a warning sign) and shade rims/eyes cyan
+  document.documentElement.style.setProperty("--danger", settings.cbMode ? "#FFFFFF" : "#FF5A5F");
   if (audio.master) audio.master.gain.value = settings.volume / 100;
 }
 $("vol").oninput = (e) => { settings.volume = +e.target.value; saveSettings(); syncSettingsUI(); };
 $("sens").oninput = (e) => { settings.sensitivity = +e.target.value; saveSettings(); syncSettingsUI(); };
 $("showFps").onchange = (e) => { settings.showFps = e.target.checked; saveSettings(); syncSettingsUI(); };
+$("cbMode").onchange = (e) => { settings.cbMode = e.target.checked; saveSettings(); syncSettingsUI(); };
+const rimColor = () => (settings.cbMode ? 0x00B3FF : C.shadeRim);
 
 // ---------------------------------------------------------------- audio (synthesised, no files)
 const audio = { ctx: null, master: null };
@@ -223,6 +232,9 @@ const SFX = {
   charm_picked: () => [784, 1046, 1318].forEach((f, i) => tone(f, 0.25, "sine", 0.12, null, i * 0.05)),
   drifter_steal: () => tone(500, 0.3, "triangle", 0.12, 200),
   countdown: () => tone(1000, 0.06, "square", 0.08),
+  lantern_out: () => [523, 392, 311].forEach((f, i) => tone(f, 0.4, "triangle", 0.12, null, i * 0.15)),
+  refuel: () => { tone(440, 0.15, "sine", 0.1, 880); tone(660, 0.2, "triangle", 0.08, 990, 0.08); },
+  fuel_drain: () => tone(90, 0.5, "sawtooth", 0.05, 60),
   wind_warning: () => { noise(1.6, 0.18, 500); tone(660, 0.4, "sine", 0.06, 880); tone(880, 0.4, "sine", 0.05, 660, 0.35); },
   wind_gust: () => { noise(2.5, 0.28, 350); noise(2.5, 0.15, 900); },
 };
@@ -241,8 +253,8 @@ from lantern_island.sim import Sim, Inputs, TICK_HZ, TUNING, WIND_EVERY
 from lantern_island.levels import make_level
 from lantern_island.bot import Bot
 G = {}
-def new_game(seed, night, demo):
-    G["sim"] = Sim(seed=int(seed), night=int(night), extras=True)
+def new_game(seed, night, demo, scenario=""):
+    G["sim"] = Sim(seed=int(seed), night=int(night), extras=True, scenario=json.loads(scenario) if scenario else None)
     G["inp"] = Inputs()
     G["bot"] = Bot() if demo else None
 def step_n(n, mx, mz, yaw, jump, interact, pulse, dash):
@@ -640,7 +652,19 @@ function makeLantern(l, light) {
   const string = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.15, 4), basic(0x222222)); string.position.y = 0.55;
   const tassel = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.3, 6), flat(C.scarf)); tassel.position.y = -0.65;
   const coreS = glowSprite(C.core, 1.4, 0); const haloS = glowSprite(C.lit, 4.5, 0);
-  hang.add(paper, ...ribs, capT, capB, string, tassel, coreS, haloS);
+  // Ticket-03: an extinguished lantern is squashed 20% and its paper is torn (readable without colour)
+  const tear = new THREE.Group();
+  for (const [x, y, rz] of [[0.18, 0.05, 0.4], [0.26, -0.08, -0.5], [0.12, -0.15, 0.2]]) {
+    const shard = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.24, 3), basic(0x15121c)); shard.position.set(x, y, 0.36); shard.rotation.z = rz; tear.add(shard);
+  }
+  const flap = new THREE.Mesh(new THREE.PlaneGeometry(0.16, 0.2), lam(C.off, { side: THREE.DoubleSide })); flap.position.set(0.3, -0.25, 0.32); flap.rotation.set(0.5, 0.3, 0.6); tear.add(flap);
+  hang.add(paper, ...ribs, capT, capB, string, tassel, coreS, haloS, tear);
+  const fuelBar = new THREE.Group(); fuelBar.position.set(0.9, 4.25, 0);
+  const barBg = new THREE.Mesh(new THREE.PlaneGeometry(1.3, 0.16), basic(0x0a0d1e, { transparent: true, opacity: 0.8, depthTest: false }));
+  const barFill = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 0.1), basic(C.gold, { transparent: true, depthTest: false }));
+  barFill.geometry.translate(0.6, 0, 0); barFill.position.set(-0.6, 0, 0.001);
+  barBg.renderOrder = barFill.renderOrder = 10;
+  fuelBar.add(barBg, barFill); fuelBar.visible = false;
   const ring = new THREE.Mesh(new THREE.RingGeometry(T.safe_radius - 0.12, T.safe_radius, 72).rotateX(-Math.PI / 2),
     basic(C.lit, { transparent: true, opacity: 0.5, depthWrite: false }));
   ring.position.y = 0.05; ring.visible = false;
@@ -648,9 +672,9 @@ function makeLantern(l, light) {
     new THREE.MeshBasicMaterial({ map: GLOW, color: C.lit, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
   pool.position.y = 0.04;
   const shadow = blob(1.8); shadow.position.y = 0.03;
-  root.add(base, post, armB, brace, hang, ring, pool, shadow); scene.add(root);
+  root.add(base, post, armB, brace, hang, ring, pool, shadow, fuelBar); scene.add(root);
   light.position.copy(root.position).add(new THREE.Vector3(0.9, 3.15, 0)); light.intensity = 0;
-  return { root, paper, coreS, haloS, ring, pool, light, hang };
+  return { root, paper, coreS, haloS, ring, pool, light, hang, tear, fuelBar, barFill };
 }
 function makeMote(kind) {
   const g = new THREE.Group();
@@ -676,7 +700,7 @@ function makeShade() {
   for (let i = 0; i < 3; i++) { const s = new THREE.Mesh(new THREE.OctahedronGeometry(0.09, 0), basic(C.gold)); s.position.set(Math.cos(i * 2.09) * 0.4, 0, Math.sin(i * 2.09) * 0.4); stars.add(s); }
   const shadow = blob(1.6);
   g.add(body, rim, eyeGlow, stars);
-  g.userData = { body, rim, tendrils, eyes, stars, shadow };
+  g.userData = { body, rim, tendrils, eyes, stars, shadow, eyeGlow };
   scene.add(g, shadow); g.userData.cleanup = shadow; return g;
 }
 function makeDrifter() {
@@ -714,9 +738,9 @@ addEventListener("mouseup", (e) => { if (e.button === 0) keys.Mouse0 = false; })
 
 // ---------------------------------------------------------------- campaign flow
 const NIGHTS = {
-  1: { name: "Đêm 1 – Đảo Bến", line: "Ông Đăng: “Mây ơi, sương đen đã nuốt Đảo Bến. Gom đom đóm, thắp lại năm ngọn Đèn Lồng Lớn trước khi trời hửng sáng nhé. Đừng ra sát mép đảo, dưới kia chỉ có biển mây.”" },
-  2: { name: "Đêm 2 – Đảo Cau", line: "Ông Đăng: “Đảo Cau có hai mỏm, nối nhau bằng chiếc cầu tre không lan can. Bục nhảy vàng sẽ đưa cháu sang nhanh hơn. Coi chừng Gió Lạc: cháu mang từ năm đom đóm trở lên là chúng tới cướp.”" },
-  3: { name: "Đêm 3 – Đảo Chuông", line: "Ông Đăng: “Đảo Chuông cao ba tầng. Theo hai con dốc mà lên, dùng bục nhảy để tới chân tháp chuông. Cứ nửa phút lại có gió mạnh. Hễ thấy lá bay là sắp có gió đấy!”" },
+  1: { name: "Đêm 1 – Đảo Bến", line: "Ông Đăng: “Mây ơi, sương đen đã nuốt Đảo Bến. Đèn giờ cạn dầu dần: thắp đèn, châm dầu, và giữ ít nhất 3 ngọn sáng tới lúc trời hửng nhé. Đừng ra sát mép đảo, dưới kia chỉ có biển mây.”" },
+  2: { name: "Đêm 2 – Đảo Cau", line: "Ông Đăng: “Đảo Cau có hai mỏm, nối nhau bằng chiếc cầu tre không lan can. Bục nhảy vàng sẽ đưa cháu sang nhanh hơn. Coi chừng Gió Lạc: cháu mang từ năm đom đóm trở lên là chúng tới cướp. Giữ 4 ngọn sáng tới bình minh!”" },
+  3: { name: "Đêm 3 – Đảo Chuông", line: "Ông Đăng: “Đảo Chuông cao ba tầng. Theo hai con dốc mà lên, dùng bục nhảy để tới chân tháp chuông. Cứ nửa phút lại có gió mạnh. Hễ thấy lá bay là sắp có gió đấy! Phải còn 5 ngọn sáng khi trời rạng.”" },
 };
 const game = { mode: "menu", night: 1, total: 0, demo: false, st: null, acc: 0, pulseT: 1, t: 0, lastSec: null, ended: false };
 function toMenu() {
@@ -734,7 +758,7 @@ function showIntro(night) {
 }
 function beginNight() {
   clearDynamic(); buildWorld(game.night);
-  newGameFn(Math.floor(Math.random() * 2 ** 30), game.night, game.demo);
+  newGameFn(Math.floor(Math.random() * 2 ** 30), game.night, game.demo, Q.has("preview") ? PREVIEW : "");
   game.st = JSON.parse(getState());
   // one light per lantern created up front: lighting a lantern then only changes intensity (no shader recompile hitch)
   lanternLights = game.st.lanterns.map(() => { const L = new THREE.PointLight(C.lit, 0, 42, 1.1); world.add(L); return L; });
@@ -758,11 +782,11 @@ function endNight(st) {
     $("resText").textContent = `Ba hòn đảo đã sáng lại. Điểm Đêm 3: ${st.score}. Tổng điểm: ${game.total}.`;
     $("btnNext").textContent = "Chơi lại từ đầu"; $("btnNext").onclick = () => startCampaign(1, game.demo);
   } else if (won) {
-    $("resTitle").textContent = `${NIGHTS[game.night].name}: đã thắp sáng!`;
+    $("resTitle").textContent = `${NIGHTS[game.night].name}: đảo sáng tới bình minh!`;
     $("resText").textContent = `Điểm đêm này: ${st.score} · Tổng: ${game.total}`;
     $("btnNext").textContent = "Đêm kế tiếp"; $("btnNext").onclick = () => showIntro(game.night + 1);
   } else {
-    $("resTitle").textContent = st.reason === "dawn" ? "Trời đã sáng…" : "Mây hết Ngọn Lửa…";
+    $("resTitle").textContent = (settings.cbMode ? "⚠ " : "") + (st.reason === "dawn" ? "Bình minh tới mà đảo chưa đủ sáng…" : "Mây hết Ngọn Lửa…");
     $("resText").textContent = `Đèn đã thắp: ${st.lanterns.filter((l) => l.lit).length}/${st.lanterns.length}. Tổng điểm hiện có: ${game.total}`;
     $("btnNext").textContent = "Chơi lại Đêm này"; $("btnNext").onclick = () => showIntro(game.night);
   }
@@ -783,7 +807,7 @@ $("btnSettingsClose").onclick = () => show("settings", false);
 
 // ---------------------------------------------------------------- HUD
 const FLAME_SVG = '<svg viewBox="0 0 20 26"><path d="M10 1C12 7 18 10 18 17a8 8 0 0 1-16 0c0-4 3-6 4-10 1 3 2 4 3 4 0-4 1-7 1-10z" fill="#FFB347"/><path d="M10 12c1 3 4 4 4 8a4 4 0 0 1-8 0c0-2 2-4 4-8z" fill="#FFE9B0"/></svg>';
-$("motebar").innerHTML = "<i></i>".repeat(10);
+let barCap = 0;
 const ringStyle = (frac, color) => `background:conic-gradient(${color} ${Math.round((1 - frac) * 360)}deg, rgba(255,255,255,.08) 0)`;
 const tmpV = new THREE.Vector3();
 const hudCache = {};
@@ -795,23 +819,30 @@ function updateHud(st) {
     $("flames").innerHTML = [0, 1, 2].map((i) => FLAME_SVG.replace("<svg", `<svg class="${i < p.flames ? "" : "off"}"`)).join("");
   }
   const secs = Math.ceil(st.time_left_s);
-  setText("timer", `${String(Math.floor(secs / 60)).padStart(2, "0")}:${String(secs % 60).padStart(2, "0")}`);
+  const clock = `${String(Math.floor(secs / 60)).padStart(2, "0")}:${String(secs % 60).padStart(2, "0")}`;
+  setText("timer", (secs <= 30 && settings.cbMode ? "⚠ " : "") + clock);
   $("timer").classList.toggle("danger", secs <= 30);
   if (secs <= 10 && secs !== game.lastSec && st.state === "playing") SFX.countdown();
   game.lastSec = secs;
   const lit = st.lanterns.filter((l) => l.lit).length;
-  setText("lanterns", `Đèn ${lit}/${st.lanterns.length}`);
+  const needLit = Math.ceil(T.win_ratio * st.lanterns.length - 1e-9);
+  setText("lanterns", `Đèn sáng ${lit}/${st.lanterns.length} · cần ≥ ${needLit} lúc bình minh`);
+  $("lanterns").style.color = lit < needLit ? "var(--danger)" : "";
   setText("score", String(game.total + st.score));
-  if (hudCache.carried !== p.carried) { hudCache.carried = p.carried; [...$("motebar").children].forEach((c, i) => c.classList.toggle("on", i < p.carried)); }
+  if (barCap !== p.capacity) { barCap = p.capacity; $("motebar").innerHTML = "<i></i>".repeat(p.capacity) + '<b id="capTxt"></b>'; hudCache.carried = -1; }
+  if (hudCache.carried !== p.carried) { hudCache.carried = p.carried; [...$("motebar").querySelectorAll("i")].forEach((c, i) => c.classList.toggle("on", i < p.carried));
+    $("capTxt").textContent = ` ${p.carried}/${p.capacity}`; }
   $("cdDash").setAttribute("style", ringStyle(p.dash_cd_s / T.dash_cooldown_s, "#F2C14E"));
   $("cdPulse").setAttribute("style", ringStyle(p.pulse_cd_s / T.pulse_cooldown_s, "#FFB347"));
   show("charm", p.charm_s > 0); if (p.charm_s > 0) setText("charm", `Bùa Gió ${p.charm_s.toFixed(1)}s`);
   show("windwarn", st.wind_soon || st.wind.active);
   setText("windwarn", st.wind.active ? "🍃 Gió mạnh!" : "🍃 Lá bay… gió sắp nổi!");
   const unlit = st.lanterns.filter((l) => !l.lit);
-  const near = unlit.find((l) => Math.hypot(l.pos[0] - p.pos[0], l.pos[2] - p.pos[2]) <= T.interact_radius);
+  const near = st.lanterns.filter((l) => (!l.lit || l.fuel < T.fuel_max) && Math.hypot(l.pos[0] - p.pos[0], l.pos[2] - p.pos[2]) <= T.interact_radius)
+    .sort((a, b) => Math.hypot(a.pos[0] - p.pos[0], a.pos[2] - p.pos[2]) - Math.hypot(b.pos[0] - p.pos[0], b.pos[2] - p.pos[2]))[0];
   show("prompt", !!near);
-  if (near) setText("prompt", `E — Nạp ánh sáng (${near.deposited}/${T.lantern_cost})`);
+  if (near) setText("prompt", near.lit ? `E — Châm dầu (dầu ${Math.floor(near.fuel)}/${T.fuel_max})`
+    : `E — Nạp ánh sáng (${near.deposited}/${near.ever_lit ? T.relight_cost : T.lantern_cost})${near.ever_lit ? " · thắp lại" : ""}`);
   let target = null, best = 1e9;
   for (const l of unlit) { const d = Math.hypot(l.pos[0] - p.pos[0], l.pos[2] - p.pos[2]); if (d < best) { best = d; target = l; } }
   if (target) {
@@ -834,6 +865,9 @@ function syncEntities(group, list, make, update) {
   for (const id in objs[group]) if (!ids.has(id)) { const o = objs[group][id]; scene.remove(o); if (o.userData.cleanup) scene.remove(o.userData.cleanup); delete objs[group][id]; }
   for (const e of list) { let o = objs[group][e.id]; if (!o) o = objs[group][e.id] = make(e); update(o, e); }
 }
+// debug ?preview: three lanterns in front of Mây (fuel 80, fuel 20 = low and blinking, out + torn)
+const PREVIEW = JSON.stringify({ random_shades: false, lanterns: [{ id: "L1", pos: [-3.5, 0, 9], lit: true, fuel: 80 },
+  { id: "L2", pos: [3.5, 0, 9], lit: true, fuel: 20 }, { id: "L3", pos: [0, 0, 14], ever_lit: true }] });
 const CHARM_POS = { 2: [[35, 0, 0]], 3: [[30, 0, 25], [-30, 0, 25]] };
 const charmPos = (i) => (CHARM_POS[game.night] || [])[i] || [0, 0, 0];
 function sync(dt) {
@@ -872,6 +906,9 @@ function sync(dt) {
     o.lookAt(may.position.x, o.position.y, may.position.z);
     const stunned = s.state === "stunned";
     u.body.material.color.setHex(stunned ? C.shadeStun : C.shade);
+    u.rim.material.color.setHex(rimColor()); u.eyeGlow.material.color.setHex(rimColor());
+    u.eyes.forEach((e) => e.material.color.setHex(settings.cbMode ? 0x00B3FF : 0xe6d6ff));
+    o.rotation.x = s.state === "drain" ? Math.sin(t * 8) * 0.1 : 0;
     u.rim.visible = !stunned; u.stars.visible = stunned; u.stars.rotation.y = t * 4;
     u.eyes.forEach((e) => { e.scale.y = stunned ? 0.3 : 1.4; });
     u.tendrils.forEach((tn, i) => { tn.rotation.x = Math.sin(t * 4 + i) * 0.35; tn.rotation.z = Math.cos(t * 3.3 + i) * 0.35; });
@@ -891,14 +928,25 @@ function sync(dt) {
   });
   for (const l of st.lanterns) {
     const L = objs.lanterns[l.id];
+    const low = l.lit && l.fuel < T.low_fuel_threshold, blinkOff = low && Math.floor(t * 2) % 2 === 1;  // 1 Hz
+    L.tear.visible = !l.lit && l.ever_lit;
+    L.hang.scale.y = l.lit ? 1 : 0.8;   // out / never lit lanterns are squashed 20%
+    L.fuelBar.visible = l.lit && !blinkOff;
     if (l.lit) {
-      L.paper.material.color.setHex(C.lit); L.paper.material.emissive.setHex(C.lit);
-      L.coreS.material.opacity = 1; L.haloS.material.opacity = 0.55 + 0.1 * Math.sin(t * 3);
-      L.ring.visible = true; L.ring.material.opacity = 0.45 + 0.2 * Math.sin(t * 2);
-      L.pool.material.opacity = 0.35; L.light.intensity = 14;
+      L.fuelBar.quaternion.copy(camera.quaternion);
+      L.barFill.scale.x = Math.max(0.001, l.fuel / T.fuel_max);
+      L.barFill.material.color.setHex(low ? (settings.cbMode ? 0xFFFFFF : C.danger) : C.gold);
+      const k = blinkOff ? 0.25 : 1;
+      L.paper.material.color.setHex(C.lit); L.paper.material.emissive.setHex(C.lit); L.paper.material.emissiveIntensity = k;
+      L.coreS.material.opacity = k; L.haloS.material.opacity = (0.55 + 0.1 * Math.sin(t * 3)) * k;
+      L.ring.visible = l.fuel >= T.low_fuel_threshold; L.ring.material.opacity = 0.45 + 0.2 * Math.sin(t * 2);
+      L.pool.material.opacity = 0.35 * k; L.light.intensity = 14 * k;
     } else {
-      const k = l.deposited / T.lantern_cost; L.paper.material.emissive.setRGB(0.55 * k, 0.33 * k, 0.1 * k);
-      L.coreS.material.opacity = 0.6 * k;
+      const cost = l.ever_lit ? T.relight_cost : T.lantern_cost, k = l.deposited / cost;
+      L.paper.material.color.setHex(C.off); L.paper.material.emissiveIntensity = 1;
+      L.paper.material.emissive.setRGB(0.55 * k, 0.33 * k, 0.1 * k);
+      L.coreS.material.opacity = 0.6 * k; L.haloS.material.opacity = 0; L.ring.visible = false;
+      L.pool.material.opacity = 0; L.light.intensity = 0;
     }
     L.hang.rotation.z = Math.sin(t * 1.3 + l.pos[0]) * 0.06;
   }

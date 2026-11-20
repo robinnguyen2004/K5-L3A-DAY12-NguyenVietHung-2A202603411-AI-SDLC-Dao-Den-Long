@@ -1,6 +1,6 @@
 # AGENTS.md — Đảo Đèn Lồng (Day 12 AI SDLC lab)
 
-Python 3.10+. Game logic is **pure stdlib** and deterministic (Test Contract **v1.1**, Ticket-02). The 3D client is a web page (Three.js) that runs the same `sim.py` through Pyodide; it only renders.
+Python 3.10+. Game logic is **pure stdlib** and deterministic (Test Contract **v1.2**, Ticket-02 + Ticket-03 lantern fuel). The 3D client is a web page (Three.js) that runs the same `sim.py` through Pyodide; it only renders.
 
 ## Layout
 - `lantern_island/levels.py` — standard maps of the 3 nights + terrain heights.
@@ -29,3 +29,5 @@ Python 3.10+. Game logic is **pure stdlib** and deterministic (Test Contract **v
 - Solid decor (levels.py `decor`) collides only when `Sim(extras=True)` (web client). Headless must stay byte-identical: `tests/test_extras.py` re-runs a committed Phase 2 proof.
 - Web perf budget: keep 60 FPS (`python3 tools/fps_bench.py`); prefer InstancedMesh and pre-created lights (adding a light recompiles every shader).
 - Before editing README.md, re-read it from disk: an editor once saved a stale buffer over it.
+- Lantern fuel is an integer in 1/60 units (`FUEL_MAX = 6000`); never use float fuel. Safe zone = `Sim.safe(l)` (lit and fuel >= 30). Design: docs/adr/0001.
+- When a ticket replaces a rule, update the old test in place with a `Ticket-0N:` comment and list it in docs/notes/phase-N.md; never skip.

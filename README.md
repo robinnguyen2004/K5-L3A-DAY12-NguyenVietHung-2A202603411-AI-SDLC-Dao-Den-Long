@@ -1,6 +1,6 @@
 # Đảo Đèn Lồng — Day 12 AI SDLC (Nguyễn Việt Hưng · 2A202603411)
 
-> Video demo: *(sẽ thêm ở Phase 4, Release `v1.0.0`)* · Đề bài lab: [LAB.md](LAB.md) · Phase hiện tại: **Phase 2 (Ticket-02 "Ba hòn đảo")**, tag `phase-2`, **Test Contract v1.1**
+> Video demo: *(sẽ thêm ở Phase 4, Release `v1.0.0`)* · Đề bài lab: [LAB.md](LAB.md) · Phase hiện tại: **Phase 3 (Ticket-03 "Đèn cạn dầu")**, tag `phase-3`, **Test Contract v1.2**
 
 Game 3D góc nhìn thứ ba qua **3 Đêm**: Đảo Bến, Đảo Cau, Đảo Chuông. Mây, cô phù thủy nhỏ giữ đèn, đội nón lá treo đèn lồng. Cô gom đom đóm để thắp lại các Đèn Lồng Lớn trước bình minh, né Bóng Mực, Gió Lạc và cả biển mây dưới chân.
 
@@ -16,7 +16,7 @@ python3 run_game.py
 
 `run_game.py` mở game trong trình duyệt qua một server tĩnh trên localhost. Cũng có thể mở thẳng file [web/dao-den-long.html](web/dao-den-long.html). Cần Internet để tải Three.js và Pyodide từ CDN. Trình duyệt chạy **đúng mã Python** `lantern_island/sim.py` qua Pyodide, nên luật chơi giống hệt bản headless.
 
-**Headless (Test Contract v1.1):** chỉ dùng thư viện chuẩn, không cần cửa sổ hay GPU.
+**Headless (Test Contract v1.2):** chỉ dùng thư viện chuẩn, không cần cửa sổ hay GPU.
 
 ```bash
 python3 headless.py --seed 1 --night 1|2|3 [--scenario s.json] [--inputs i.json] --ticks 600 --out out.jsonl [--snapshot-every 10]
@@ -31,33 +31,36 @@ python3 headless.py --seed 1 --night 1|2|3 [--scenario s.json] [--inputs i.json]
 | W A S D | Đi theo hướng camera |
 | Chuột (bấm vào màn hình để khóa) / ← → | Xoay camera; độ nhạy chỉnh trong Cài đặt |
 | Space · Shift | Nhảy · Lướt (14 m/s trong 0.2 s, hồi 1.5 s) |
-| E | Nạp ánh sáng vào đèn trong 2 m |
+| E | Nạp ánh sáng vào đèn tắt, hoặc **châm dầu** cho đèn đang sáng (trong 2 m) |
 | Q / chuột trái | Tỏa Sáng: tốn 3 đom đóm, làm choáng Bóng Mực trong 5 m |
 | Esc / P · F3 | Tạm dừng (Tiếp tục / Chơi lại Đêm / Cài đặt / Về menu) · Hiện FPS |
 
-Menu chính có **Bắt đầu** (chuỗi 3 đêm), chọn thẳng Đêm 1/2/3, **Xem bot chơi**, và **Cài đặt** (âm lượng, độ nhạy chuột, hiện FPS; lưu trên trình duyệt).
+Menu chính có **Bắt đầu** (chuỗi 3 đêm), chọn thẳng Đêm 1/2/3, **Xem bot chơi**, và **Cài đặt** (âm lượng, độ nhạy chuột, hiện FPS, **Bảng màu dễ phân biệt** cho người mù màu; lưu trên trình duyệt).
 
-## Luật và điểm (số chuẩn của Ticket-02)
+## Luật và điểm (Ticket-02 + Ticket-03 "Đèn cạn dầu")
 
+**Mục tiêu: giữ đảo sáng tới bình minh.** Thắp đủ đèn không kết thúc Đêm. Lúc hết giờ, Mây phải còn sống và còn ít nhất **ceil(60%)** đèn đang sáng: Đêm 1 cần 3/5, Đêm 2 cần 4/6, Đêm 3 cần 5/7.
+
+- Đêm dài **240 / 270 / 300 s**. Hết Ngọn Lửa thì thua ngay, kể cả ở tick cuối.
+- **Dầu đèn:**
+  - Đèn vừa thắp có 100 dầu, hao 1/giây.
+  - Bấm E ở đèn đang sáng để châm dầu: +10 dầu mỗi đom đóm, chỉ dùng số đom đóm cần thiết.
+  - Hết dầu thì đèn tắt. Đèn từng sáng thì thắp lại chỉ cần **5** đom đóm; đèn chưa từng sáng cần **10**.
+- Đèn sáng có **≥ 30 dầu** mới có vùng an toàn 6 m. Đèn yếu (< 30) thì Bóng Mực tìm tới và **hút dầu** (−5/giây mỗi con), nên phải châm dầu hoặc dùng Tỏa Sáng đuổi chúng.
+- **Sức chứa** = 10 + 2 × số lần thắp thành công trong Đêm, tối đa 20.
 - **3 Ngọn Lửa** (máu), hồi đầy đầu mỗi Đêm.
-  - Bị Bóng Mực chạm: −1 lửa, rơi một nửa số đom đóm ra quanh Mây (8 s sau thì tan, nhặt lại được), bất tử 1.5 s.
-  - Rơi khỏi đảo: −1 lửa, mất hết đom đóm, hồi sinh ở điểm xuất phát sau 1 s.
-- Mang tối đa **10** đom đóm, mỗi đèn cần **10**. Đèn nhớ tiến độ nên nạp nhiều lần được.
-- Đèn đã sáng tạo vùng an toàn 6 m mà Bóng Mực không vào được.
-- Đêm dài 300 / 330 / 360 s.
-  - Thắp hết đèn thì thắng, kể cả đúng tick hết giờ.
-  - Hết lửa thì thua.
-  - Hết giờ mà chưa thắp hết thì thua.
-- **Gió Lạc** (Đêm 2–3): cướp 3 đom đóm nếu bạn mang từ 5 trở lên. **Bùa Gió**: chạy 7.2 m/s và lướt không hồi chiêu trong 10 s. **Gió mạnh** (Đêm 3): mỗi 30 s, báo trước bằng lá bay.
+  - Bị Bóng Mực chạm: −1 lửa, rơi một nửa số đom đóm (8 s sau thì tan, nhặt lại được), bất tử 1.5 s.
+  - Rơi khỏi đảo: −1 lửa, mất hết đom đóm, hồi sinh sau 1 s.
+- **Gió Lạc** (Đêm 2–3): cướp 3 đom đóm nếu bạn mang từ 5 trở lên. **Bùa Gió**: chạy 7.2 m/s và lướt không hồi chiêu trong 10 s. **Gió mạnh** (Đêm 3): mỗi 30 s, báo trước bằng lá bay và âm thanh.
 
 | Sự kiện | Điểm |
 |---|---|
-| Mỗi đom đóm **nạp** vào đèn | +10 |
-| Thắp 1 đèn | +100 |
-| Mỗi Bóng Mực trúng Tỏa Sáng (kể cả con đang choáng) | +5 |
-| Khi thắng: mỗi giây nguyên còn lại / mỗi Ngọn Lửa còn lại | +2 / +50 |
+| Mỗi đom đóm nạp vào đèn (thắp, thắp lại, châm dầu) | +5 |
+| Thắp lần đầu / thắp lại | +100 / +40 |
+| Bóng Mực trúng Tỏa Sáng | +5 mỗi con (+15 nếu nó đang hút dầu) |
+| Bình minh, chỉ khi thắng: mỗi đèn đang sáng / mỗi Ngọn Lửa | +50 + floor(dầu) / +50 |
 
-Tổng điểm game là tổng điểm các Đêm đã thắng. Mọi con số nằm trong [game.contract.json](game.contract.json), và game đọc trực tiếp file này. Giả định và thay đổi so với Phase 1: [docs/notes/phase-2.md](docs/notes/phase-2.md).
+Tổng điểm game là tổng điểm các Đêm đã thắng. Mọi con số nằm trong [game.contract.json](game.contract.json) (**Test Contract v1.2**), và game đọc trực tiếp file này. Thay đổi phá vỡ tương thích: [CHANGELOG.md](CHANGELOG.md). Quyết định thiết kế: [ADR 0001](docs/adr/0001-lantern-fuel-and-dawn-win.md).
 
 ## Kiến trúc
 
@@ -93,6 +96,6 @@ Bằng chứng: [docs/proof/visual-upgrade](docs/proof/visual-upgrade/README.md)
 
 ## Bằng chứng và ghi chép
 
-- Phase 2: [docs/proof/phase-2/README.md](docs/proof/phase-2/README.md) · Phase 1: [docs/proof/phase-1/README.md](docs/proof/phase-1/README.md) · Nâng cấp hình ảnh: [docs/proof/visual-upgrade/README.md](docs/proof/visual-upgrade/README.md)
-- Giả định và đánh giá: [phase-1.md](docs/notes/phase-1.md), [phase-2.md](docs/notes/phase-2.md) · Nhật ký AI và token: [ai-log.md](docs/notes/ai-log.md)
+- Phase 3: [docs/proof/phase-3/README.md](docs/proof/phase-3/README.md) · Phase 2: [docs/proof/phase-2/README.md](docs/proof/phase-2/README.md) · Phase 1: [docs/proof/phase-1/README.md](docs/proof/phase-1/README.md) · Nâng cấp hình ảnh: [docs/proof/visual-upgrade/README.md](docs/proof/visual-upgrade/README.md)
+- Giả định và đánh giá: [phase-1.md](docs/notes/phase-1.md), [phase-2.md](docs/notes/phase-2.md), [phase-3.md](docs/notes/phase-3.md) · ADR: [docs/adr/](docs/adr/) · [CHANGELOG.md](CHANGELOG.md) · Nhật ký AI và token: [ai-log.md](docs/notes/ai-log.md)
 - Harness AI: [AGENTS.md](AGENTS.md) (CLAUDE.md trỏ tới), skill [verify-proof](.claude/skills/verify-proof/SKILL.md), hook [.claude/settings.json](.claude/settings.json) (Stop hook chặn kết thúc khi test đỏ; PostToolUse kiểm tra contract JSON hợp lệ)

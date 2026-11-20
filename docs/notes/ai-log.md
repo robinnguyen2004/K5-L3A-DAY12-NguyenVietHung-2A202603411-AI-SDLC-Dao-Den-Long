@@ -44,3 +44,16 @@ Công cụ: Claude Code (model Claude Opus 5.5) trong VS Code. Harness: [AGENTS.
 - Ảnh chụp cận nhân vật làm lộ **lỗi có từ bản trước**: Mây quay lưng về hướng đi (thừa `+π` khi đổi hệ trục sim → three). Không có test nào bắt được lỗi hình ảnh kiểu này; chỉ phát hiện nhờ chụp ảnh kiểm tra.
 - Đo FPS: thử `--timeout` của Edge headless không giữ được trang ⇒ viết `tools/fps_bench.py` (trang tự POST thống kê frame time về server cục bộ). Kết quả khoảng 165 FPS trung bình, p95 6.2 ms trên Iris Xe.
 - Token ước tính cho phần này: khoảng 150k (phần lớn là viết lại template web).
+
+## Phase 3 (Ticket-03 "Đèn cạn dầu")
+
+| Bước | Việc giao cho AI | Kết quả, tôi kiểm thế nào |
+|---|---|---|
+| Đọc ticket | PDF Ticket-03 (lab board không cho đọc nội dung phase mới qua công cụ, nên phải xin người dùng gửi file) | Liệt kê 3 luật [THAY THẾ] và các test bị ảnh hưởng **trước** khi code (phase-3.md mục 1) |
+| Chỗ mơ hồ | "đi về đèn tắt gần nhất như trước" | Đọc code nền của lab board: wander lượn bán kính 11 m quanh đèn tắt, tốc độ 0.45 × ⇒ giả định C1, C2 |
+| Lõi | Dầu bằng đơn vị nguyên 1/60, drain, thắng lúc bình minh, sức chứa, điểm mới | 17 test mới. Lần đầu 3 đỏ: 1 lỗi thật (bóng drain bị đẩy vẫn giữ trạng thái drain) + 2 lỗi test |
+| Test cũ | 4 test bị luật mới thay thế | Sửa tại chỗ, có comment `Ticket-03:`, không skip |
+| Bot | Chiến thuật giữ đèn | Lần đầu thắng Đêm 1 1/3 seed ⇒ giới hạn số đèn thắp (ngưỡng + 1), châm dầu khi < 60 ⇒ 3/3. Phát hiện lỗi ghi lại ≠ phát lại có từ Phase 2 (làm tròn hướng đi) và đã sửa |
+| Client | Thanh dầu, đèn rách/xẹp, mù màu, HUD sức chứa | Thêm `?preview` để chụp ảnh đèn ở các mức dầu, vì trình duyệt headless không chạy thời gian thật |
+
+**Token / chi phí ước tính (Phase 3):** khoảng 250k token. Cách tiết kiệm: vá bằng script có assert (sai một chỗ là dừng ngay, không vá lệch); chỉ grep đoạn code nền của lab board cần thiết; dừng tinh chỉnh bot Đêm 2–3 và ghi trung thực.
