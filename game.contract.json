@@ -1,9 +1,11 @@
 {
-  "contract_version": "1.2",
+  "contract_version": "1.3",
   "team": "2A202603411-NguyenVietHung",
   "build_cmd": "python3 tools/build_web.py",
   "run_cmd": "python3 run_game.py",
   "headless_cmd": "python3 headless.py",
+  "bench_cmd": "python3 tools/bench.py",
+  "soak_cmd": "python3 tools/soak.py",
   "tuning": {
     "player_speed": 6.0,
     "carry_capacity": 10,

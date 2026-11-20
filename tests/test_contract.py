@@ -408,7 +408,9 @@ class ContractFile(unittest.TestCase):
             c = json.load(f)
         t = c["tuning"]
         # Ticket-03: durations 240/270/300 s, new fuel keys, new score table (contract v1.2)
-        self.assertEqual(c["contract_version"], "1.2")
+        # Ticket-04: contract v1.3 adds bench_cmd and soak_cmd; every v1.0-v1.2 number stays the same
+        self.assertEqual(c["contract_version"], "1.3")
+        self.assertEqual((c["bench_cmd"], c["soak_cmd"]), ("python3 tools/bench.py", "python3 tools/soak.py"))
         for k, v in {"fuel_max": 100, "fuel_decay_per_s": 1.0, "fuel_per_mote": 10, "relight_cost": 5,
                      "win_ratio": 0.6, "drain_per_s": 5, "low_fuel_threshold": 30, "capacity_max": 20}.items():
             self.assertEqual(c["tuning"][k], v, k)

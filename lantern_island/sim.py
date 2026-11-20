@@ -1,4 +1,4 @@
-"""Pure game logic for Dao Den Long (Lantern Island), Test Contract v1.2 (Ticket-03 lantern fuel).
+"""Pure game logic for Dao Den Long (Lantern Island), Test Contract v1.3 (Ticket-03 lantern fuel).
 
 Stdlib only; shared by the headless runner and the browser client (via Pyodide).
 Fixed step 60 Hz. Tuning numbers come from game.contract.json; map data from levels.py.
@@ -42,6 +42,7 @@ MOTE_START, MOTE_CAP, MOTE_EVERY = 20, 30, 240
 SHADE_FIRST = 300
 SHADE_SPAWN_MIN_DIST = 15.0
 SHADE_HOVER = 1.0
+BENCH_SHADES, BENCH_MOTES, BENCH_LIT = 200, 100, 3  # Ticket-04 benchmark scene
 SPAWNING_TICKS = 60                             # assumption, see docs/notes/phase-2.md
 SHADE_DETECT, SHADE_GIVEUP = 12.0, 18.0
 RECOIL_TICKS, RECOIL_DIST = 60, 2.0
@@ -99,6 +100,7 @@ class Sim:
         self.level = L = make_level(night)
         self.night = night
         self.extras = extras
+        self.bench = False  # Ticket-04 benchmark scene (see bench_scene); never set by the headless CLI
         # creative extra: solid decor (trees, graves, rocks) only in the 3D client. Headless never
         # passes extras, so contract output is unchanged (verified byte-for-byte by tools/verify.py).
         self.decor = L.decor if extras else []
@@ -135,6 +137,43 @@ class Sim:
             self._add_mote(*L.mote_points[idx], kind="random", pt=idx)
         if scenario:
             self._apply_scenario(scenario)
+
+    @classmethod
+    def bench_scene(cls, seed=42):
+        """Ticket-04 standard benchmark scene: Night 1, exactly 200 shades in `wander` and 100 motes spread
+        uniformly over the island (from `seed`), L1-L3 lit with fuel 100, Mây standing at (0, 0, 0).
+        Spawns, damage, pickups, fuel decay and the end of the night are off; shades still move by the
+        normal wander rule (they never switch to chase). Creative extras (decor) are off."""
+        sim = cls(seed=seed, night=1)
+        sim.bench = True
+        sim.random_motes = sim.random_shades = sim.random_drifters = sim.wind_enabled = False
+        p = sim.p
+        p["x"], p["z"] = 0.0, 0.0
+        p["y"] = sim.col(0.0, 0.0) or 0.0
+        for i, l in enumerate(sim.lanterns):
+            lit = i < BENCH_LIT
+            l["lit"], l["ever_lit"] = lit, lit
+            l["fuel"] = FUEL_MAX if lit else 0
+            l["deposited"] = int(T["lantern_cost"]) if lit else 0
+        rng = random.Random("%d:bench" % seed)
+        radius = sim.level.decor_regions[0][1] - 1.5  # stay off the sand rim of the Night 1 island
+
+        def spot():
+            while True:
+                a, d = rng.uniform(0.0, 2.0 * math.pi), radius * math.sqrt(rng.random())
+                x, z = d * math.cos(a), d * math.sin(a)
+                top = sim.col(x, z)
+                if top is not None:
+                    return x, top, z
+        sim.shades, sim.motes, sim.drifters = [], [], []
+        sim.next_id = {"M": 1, "S": 1, "D": 1}
+        for _ in range(BENCH_SHADES):
+            x, top, z = spot()
+            sim.shades.append(sim._new_shade(sim._new_id("S"), x, top + SHADE_HOVER, z, state="wander"))
+        for _ in range(BENCH_MOTES):
+            x, top, z = spot()
+            sim._add_mote(x, top, z, kind="random")
+        return sim
 
     # ------------------------------------------------------------------ helpers
     def col(self, x, z):
@@ -289,13 +328,14 @@ class Sim:
 
         # 2. timers, lantern fuel (decay + drain); right after step 2 empty lanterns go out
         respawn_now = self._tick_timers()
-        self._tick_fuel()
+        if not self.bench:
+            self._tick_fuel()
 
         # 3. move Mây, then check falling off the island
         self._move_player(inp, edge, respawn_now)
 
         # 4. pick up motes and charms
-        if self.touchable():
+        if self.touchable() and not self.bench:
             self._pickups()
 
         # 5. interact with lanterns
@@ -316,13 +356,16 @@ class Sim:
             self._move_drifter(d)
 
         # 9. touches: drifters steal first, then shades hit (ascending id)
-        if self.touchable():
+        if self.touchable() and not self.bench:
             self._touches()
 
         # 10. scheduled spawns (new entities interact from the next tick)
-        self._spawns()
+        if not self.bench:
+            self._spawns()
 
         # 11. win / lose after every update of the tick: no early win any more (Ticket-03)
+        if self.bench:
+            return self.events
         if p["flames"] <= 0:
             self._finish("lost", "no_flames")
         elif self.sim_tick >= self.duration_ticks:
@@ -651,7 +694,7 @@ class Sim:
             self._shade_try(s, ux * RECOIL_DIST / RECOIL_TICKS, uz * RECOIL_DIST / RECOIL_TICKS)
         else:
             d = hdist(s["x"], s["z"], p["x"], p["z"])
-            if s["state"] == "wander" and self.touchable() and d <= SHADE_DETECT:
+            if s["state"] == "wander" and self.touchable() and d <= SHADE_DETECT and not self.bench:
                 s["state"] = "chase"
             elif s["state"] == "chase" and (d > SHADE_GIVEUP or not self.touchable()):
                 s["state"] = "wander"

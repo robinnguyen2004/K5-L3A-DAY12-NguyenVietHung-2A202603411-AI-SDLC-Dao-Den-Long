@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""One-command verification + proof generator (Test Contract v1.2).
+"""One-command verification + proof generator (Test Contract v1.3).
 
     python3 tools/verify.py                    # check only (exit 1 if anything fails)
     python3 tools/verify.py --write phase-2    # also write docs/proof/phase-2/*
@@ -59,7 +59,7 @@ def main():
     r = subprocess.run([PY, "-m", "unittest", "discover", "-s", os.path.join(ROOT, "tests")],
                        capture_output=True, text=True, cwd=ROOT)
     tail = r.stderr.strip().splitlines() or ["?"]
-    check("Unit tests (contract v1.2)", "python3 -m unittest discover -s tests", r.returncode == 0,
+    check("Unit tests (contract v1.3)", "python3 -m unittest discover -s tests", r.returncode == 0,
           " / ".join([l for l in tail if l.startswith("Ran ")] + [tail[-1]]))
     if a.write:
         with open(os.path.join(outdir, "unittest.txt"), "w", encoding="utf-8") as f:
@@ -170,6 +170,27 @@ def main():
         else:
             check("Night %d playthrough (informational)" % night, "autopilot seed %d, record == replay" % seed,
                   r.returncode == 0, end)
+
+    # ---- Ticket-04: soak test (same process, 10 nights) and leaderboard export
+    so = os.path.join(outdir, "soak.json")
+    r = subprocess.run([PY, os.path.join(ROOT, "tools", "soak.py"), "--seed", "7", "--nights", "10", "--out", so],
+                       capture_output=True, text=True)
+    sd = json.load(open(so, encoding="utf-8")) if r.returncode == 0 and os.path.exists(so) else {}
+    check("Soak test (10 nights, one process)", "crashes = 0 and mem_end <= 1.2 x mem_start",
+          sd.get("crashes") == 0 and sd.get("nights") == 10 and sd["mem_end_mb"] <= 1.2 * sd["mem_start_mb"],
+          json.dumps({k: sd.get(k) for k in ("crashes", "mem_start_mb", "mem_end_mb", "duration_s")}))
+    lbdir = tempfile.mkdtemp()
+    env = dict(os.environ, DDL_DATA_DIR=lbdir)
+    sys.path.insert(0, ROOT)
+    from lantern_island import leaderboard as lbm
+    for name, score, at in (("Bao", 400, "2026-11-20T10:00:00+07:00"), ("An_1", 900, "2026-11-20T10:05:00+07:00"),
+                            ("Chi", 400, "2026-11-20T09:00:00+07:00")):
+        lbm.add(name, score, 1, 7, at, path=os.path.join(lbdir, "leaderboard.json"))
+    lo = os.path.join(outdir, "leaderboard_export.json")
+    r = subprocess.run([PY, os.path.join(ROOT, "run_game.py"), "--export-leaderboard", lo], env=env, capture_output=True, text=True)
+    names = [e["name"] for e in json.load(open(lo, encoding="utf-8"))["entries"]] if r.returncode == 0 else []
+    check("Leaderboard export", "run_game.py --export-leaderboard: score desc, tie -> earlier first",
+          names == ["An_1", "Chi", "Bao"], str(names))
 
     ok = all(x[2] for x in results)
     if a.write:

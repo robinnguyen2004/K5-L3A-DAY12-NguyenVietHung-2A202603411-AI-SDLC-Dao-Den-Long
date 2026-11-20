@@ -1,4 +1,4 @@
-"""Headless runner per Test Contract v1.2 (--night 1|2|3).
+"""Headless runner per Test Contract v1.3 (--night 1|2|3).
 
 <cmd> --seed N --night 1 [--scenario f.json] [--inputs f.json] --ticks N --out f.jsonl
       [--snapshot-every N (default 10)]

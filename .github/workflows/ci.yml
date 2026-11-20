@@ -21,3 +21,9 @@ jobs:
           cmd=$(python3 -c "import json;print(json.load(open('game.contract.json'))['headless_cmd'])")
           $cmd --seed 3 --night 1 --ticks 600 --out out.jsonl
           tail -n 1 out.jsonl
+      - name: Contract soak_cmd (Ticket-04)
+        run: |
+          cmd=$(python3 -c "import json;print(json.load(open('game.contract.json'))['soak_cmd'])")
+          $cmd --seed 7 --nights 10 --out soak_ci.json
+      - name: Leaderboard export (run_cmd --export-leaderboard)
+        run: python3 run_game.py --export-leaderboard lb_ci.json && cat lb_ci.json
