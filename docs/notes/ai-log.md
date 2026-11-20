@@ -57,3 +57,11 @@ Công cụ: Claude Code (model Claude Opus 5.5) trong VS Code. Harness: [AGENTS.
 | Client | Thanh dầu, đèn rách/xẹp, mù màu, HUD sức chứa | Thêm `?preview` để chụp ảnh đèn ở các mức dầu, vì trình duyệt headless không chạy thời gian thật |
 
 **Token / chi phí ước tính (Phase 3):** khoảng 250k token. Cách tiết kiệm: vá bằng script có assert (sai một chỗ là dừng ngay, không vá lệch); chỉ grep đoạn code nền của lab board cần thiết; dừng tinh chỉnh bot Đêm 2–3 và ghi trung thực.
+
+## Sau Phase 3: phong cách "đất sét mềm" (yêu cầu của tôi)
+
+- ArtStation chặn công cụ fetch (403) ⇒ AI không đoán phong cách mà xin ảnh chụp. Từ 6 ảnh, AI rút ra 7 đặc điểm (khối bo tròn, đá xếp tầng trên đế, cây trứng, tường đất nung + mái ngói góc cong, nền lát ô, AO mềm, lúa vàng) rồi dựng lại bằng primitive. Không đưa ảnh hay model của tác giả vào repo.
+- Ràng buộc giữ nguyên: đêm + bảng màu Ticket-02, decor va chạm giữ đúng vị trí/bán kính (chỉ thay hình), headless không đổi (verify PASS, 61 test).
+- AI chụp ảnh kiểm tra và tự sửa 3 lỗi hình học trước khi chạy: điều kiện bỏ gân ngói làm mất gần hết hàng ngói, sừng góc mái chĩa vào trong, gờ bậc đá nghiêng ngược.
+- **Bài học đo đạc:** FPS tụt dần qua từng lần đo, cả với bản cũ. AI không kết luận "đồ họa mới nặng" mà đo A/B xen kẽ, rồi tìm ra 12 trình duyệt headless do `fps_bench.py` bỏ sót vẫn đang chạy game. Đã sửa tool (kill theo profile). Đo lại: cũ 165.0 / mới 164.9 FPS.
+- Token ước tính: khoảng 120k.

@@ -1,0 +1,10 @@
+{
+  "avg_fps": 165.02119301147968,
+  "p95_ms": 6.200000000000728,
+  "frames": 1277,
+  "dpr": 1,
+  "draw_calls": 90,
+  "triangles": 108932,
+  "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36 Edg/157.0.0.0",
+  "gpu": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x000046A6) Direct3D11 vs_5_0 ps_5_0, D3D11)"
+}

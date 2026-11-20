@@ -61,6 +61,16 @@ def main():
     ok = done.wait(a.timeout)
     if proc:
         proc.terminate()
+        # Chrome/Edge often hand the page to a detached browser process that survives terminate(); a leftover
+        # headless browser keeps rendering the game and slows every later benchmark. Kill by profile dir.
+        profile = args[3].split("=", 1)[1]
+        if os.name == "nt":
+            subprocess.run(["powershell", "-NoProfile", "-Command",
+                            "Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*%s*' } | "
+                            "ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }" % profile],
+                           capture_output=True)
+        else:
+            subprocess.run(["pkill", "-f", profile], capture_output=True)
     httpd.shutdown()
     if not ok:
         print("no result within %.0f s" % a.timeout, file=sys.stderr)

@@ -4,7 +4,7 @@
 
 Game 3D góc nhìn thứ ba qua **3 Đêm**: Đảo Bến, Đảo Cau, Đảo Chuông. Mây, cô phù thủy nhỏ giữ đèn, đội nón lá treo đèn lồng. Cô gom đom đóm để thắp lại các Đèn Lồng Lớn trước bình minh, né Bóng Mực, Gió Lạc và cả biển mây dưới chân.
 
-![Đêm 1 – Đảo Bến](docs/proof/visual-upgrade/night1.png)
+![Đêm 3 – Đảo Chuông](docs/proof/visual-style/night3_bell_tower.png)
 
 ## Cài đặt và chạy (macOS / Linux / Windows, Python ≥ 3.10, không cần cài thư viện)
 
@@ -80,22 +80,24 @@ tools/fps_bench.py          đo FPS thật của client web (bot chơi Đêm 3)
 Không mục nào làm đổi đầu ra headless:
 
 1. **Mây là một cô phù thủy nhỏ** (dựa trên ảnh tham khảo của tôi). Nhân vật dựng thành rig có hoạt ảnh đi, nhảy, lướt và giơ tay khi tỏa sáng. Có áo choàng kem viền vàng, khăn đỏ có hai đuôi bay, mặt tối với ngôi sao phát sáng, gậy phép đầu xoắn ốc. Nón lá vẫn giữ (PRD-0), có gân, dải đỏ và đỉnh gập kiểu phù thủy, kèm đèn lồng treo.
-2. **Chướng ngại vật thật:** cây thông, cây khô, bia mộ, đá chặn đường Mây; bia mộ và đá nhỏ thì nhảy qua được.
+2. **Chướng ngại vật thật:** cụm cây trứng, cột đá xếp tầng, trụ đá mái ngói, đá xếp tầng chặn đường Mây; trụ đá và đá nhỏ thì nhảy qua được.
    - Va chạm nằm trong `sim.py` nhưng chỉ bật ở client 3D (`Sim(extras=True)`).
    - Headless không có chướng ngại. Test `test_headless_reproduces_phase2_proof` chạy lại scenario Phase 2 và so từng byte.
    - Vị trí cố định theo đêm, chừa trống quanh đèn, điểm sinh đom đóm, cầu và dốc.
-3. **Đảo ma tự sáng tác:**
-   - Phong cảnh: đảo nổi có vách đá, cây khô, bia đá, ma trơi, bầu trời sao + trăng, biển mây.
+3. **Đảo đêm phong cách "đất sét mềm"** (học phong cách từ ảnh tham khảo rồi tự dựng bằng code, không dùng asset của tác giả; chi tiết ở [visual-style](docs/proof/visual-style/README.md)):
+   - Khối bo tròn, đá xếp tầng trên đế vuông, cây hình trứng, nền lát ô, bóng tiếp đất giả.
+   - Đêm 3 có tháp chuông đất nung với mái ngói cong và gác chuông hở; tường tầng ốp đá; dốc thành bậc đá.
+   - Đảo nền có miếu, đình, cụm đá trôi quanh khu chơi; vách đảo xếp khối đá; ma trơi, bầu trời sao + trăng, biển mây.
    - Đèn lồng giấy có gân, ánh sáng loang trên mặt đất.
    - Bóng Mực có viền tím, xúc tu và mắt nhìn theo Mây.
 4. **Đom đóm bay quanh Mây** theo số đang mang. Vòng sáng an toàn hiện đúng 6 m quanh đèn đã thắp.
 5. **Âm thanh tổng hợp bằng WebAudio** (không dùng file ngoài) và lời dẫn của Ông Đăng cho từng đêm.
-6. **60 FPS:** decor vẽ bằng instancing; đèn tạo sẵn nên thắp đèn không gây khựng; tự hạ độ phân giải khi chậm. Đo được khoảng 165 FPS trung bình trên GPU Intel Iris Xe tích hợp ([fps_bench.json](docs/proof/visual-upgrade/fps_bench.json)).
+6. **60 FPS:** decor vẽ bằng instancing; đèn tạo sẵn nên thắp đèn không gây khựng; tự hạ độ phân giải khi chậm. Đo được khoảng 165 FPS trung bình, p95 6.2 ms trên GPU Intel Iris Xe tích hợp, cả sau khi đổi phong cách ([fps_bench.json](docs/proof/visual-style/fps_bench.json)).
 
-Bằng chứng: [docs/proof/visual-upgrade](docs/proof/visual-upgrade/README.md). `tools/verify.py` so hash output headless (chạy hai lần giống từng byte) và chạy lại toàn bộ test.
+Bằng chứng: [docs/proof/visual-style](docs/proof/visual-style/README.md), [docs/proof/visual-upgrade](docs/proof/visual-upgrade/README.md). `tools/verify.py` so hash output headless (chạy hai lần giống từng byte) và chạy lại toàn bộ test.
 
 ## Bằng chứng và ghi chép
 
-- Phase 3: [docs/proof/phase-3/README.md](docs/proof/phase-3/README.md) · Phase 2: [docs/proof/phase-2/README.md](docs/proof/phase-2/README.md) · Phase 1: [docs/proof/phase-1/README.md](docs/proof/phase-1/README.md) · Nâng cấp hình ảnh: [docs/proof/visual-upgrade/README.md](docs/proof/visual-upgrade/README.md)
+- Phase 3: [docs/proof/phase-3/README.md](docs/proof/phase-3/README.md) · Phase 2: [docs/proof/phase-2/README.md](docs/proof/phase-2/README.md) · Phase 1: [docs/proof/phase-1/README.md](docs/proof/phase-1/README.md) · Hình ảnh: [visual-style](docs/proof/visual-style/README.md), [visual-upgrade](docs/proof/visual-upgrade/README.md)
 - Giả định và đánh giá: [phase-1.md](docs/notes/phase-1.md), [phase-2.md](docs/notes/phase-2.md), [phase-3.md](docs/notes/phase-3.md) · ADR: [docs/adr/](docs/adr/) · [CHANGELOG.md](CHANGELOG.md) · Nhật ký AI và token: [ai-log.md](docs/notes/ai-log.md)
 - Harness AI: [AGENTS.md](AGENTS.md) (CLAUDE.md trỏ tới), skill [verify-proof](.claude/skills/verify-proof/SKILL.md), hook [.claude/settings.json](.claude/settings.json) (Stop hook chặn kết thúc khi test đỏ; PostToolUse kiểm tra contract JSON hợp lệ)
