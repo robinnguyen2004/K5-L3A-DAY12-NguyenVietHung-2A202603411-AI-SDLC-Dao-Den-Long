@@ -16,6 +16,8 @@ python3 -m venv .venv && .venv/bin/python -m pip install -r requirements.txt
 
 Windows: thay `.venv/bin/python` bằng `.venv\Scripts\python`.
 
+**Chơi thử trên trình duyệt (không cần cài gì):** mở file [web/dao-den-long.html](web/dao-den-long.html) bằng Chrome/Edge/Firefox (cần Internet để tải Three.js và Pyodide từ CDN). Trang chạy **đúng mã Python** `sim.py` + `bot.py` trong trình duyệt qua Pyodide, nên luật chơi giống hệt bản headless. Có nút "Xem bot chơi". Build lại sau khi sửa luật: `python3 tools/build_web.py` (test `tests/test_web.py` báo đỏ nếu file web bị cũ).
+
 **Headless (Test Contract v1.0)** chỉ dùng thư viện chuẩn, không cần cài gì, không cần cửa sổ/GPU:
 
 ```bash

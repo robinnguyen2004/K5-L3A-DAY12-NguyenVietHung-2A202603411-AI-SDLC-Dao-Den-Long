@@ -17,6 +17,7 @@ Tạo lại toàn bộ: `python3 tools/verify.py --write` (không sửa tay file
 | HUD hiển thị thông tin cần thiết | Ảnh | lửa, đom đóm, đèn, thời gian, điểm, hồi chiêu: [gui_demo_midgame.png](gui_demo_midgame.png) | Đạt |
 | Chơi lại sau thắng/thua | Màn kết thúc có hướng dẫn R, chơi tay | [gui_demo_won.png](gui_demo_won.png) | Đạt (kiểm tay) |
 | GUI và headless chung logic | So điểm | GUI thắng seed 7 = 1400 điểm = `end.score` của [bot/run_seed7.jsonl](bot/run_seed7.jsonl) | Đạt |
+| Bản web chơi được trên trình duyệt | Edge headless mở `web/dao-den-long.html?demo` | [web_demo_loaded.png](web_demo_loaded.png): Pyodide tải xong, bot vào ván, cảnh 3D và HUD hiển thị; `tests/test_web.py` kiểm file web nhúng đúng mã sim hiện tại | Đạt (vòng chơi trong trình duyệt chỉ kiểm tay) |
 | Tick model, snapshot, time_left_s, dòng end | Unit test | `TickModel` | Đạt |
 | Tất định | Chạy 2 lần, so sha256 | `Determinism`; verify_summary | Đạt |
 | Input/scenario sai → mã thoát 2 | Subprocess | `CliExitCodes`; verify_summary | Đạt |
