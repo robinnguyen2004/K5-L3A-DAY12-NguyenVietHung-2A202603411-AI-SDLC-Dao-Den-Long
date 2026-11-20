@@ -37,3 +37,10 @@ Công cụ: Claude Code (model Claude Opus 5.5) trong VS Code. Harness: [AGENTS.
 - Hai luật timer của Phase 1 và Phase 2 dễ lẫn ⇒ AGENTS.md ghi rõ: hiệu lực hết tick k+N−1, hồi chiêu sẵn sàng ở tick k+N.
 
 **Token / chi phí ước tính (Phase 2):** khoảng 400–500k token. Phần lớn là viết sim mới, client web và các vòng sửa bot. Cách tiết kiệm: chỉ đọc lại đoạn bị cắt của lab board bằng grep; kiểm chứng bằng PASS/FAIL ngắn; phân tích nguyên nhân chết của bot bằng script trên JSONL thay vì đọc log; dừng tinh chỉnh bot Đêm 3 và ghi trung thực thay vì đốt thêm token.
+
+## Sau Phase 2: chướng ngại vật + nâng cấp hình ảnh (yêu cầu của tôi)
+
+- Ràng buộc nhắc lại cho AI: Ticket-02 cấm phần thêm làm đổi output headless ⇒ va chạm decor nằm trong `sim.py` nhưng chỉ bật khi `extras=True`. Bằng chứng: chạy lại scenario Phase 2 ra đúng từng byte (test + `cmp` trên 9 file).
+- Ảnh chụp cận nhân vật làm lộ **lỗi có từ bản trước**: Mây quay lưng về hướng đi (thừa `+π` khi đổi hệ trục sim → three). Không có test nào bắt được lỗi hình ảnh kiểu này; chỉ phát hiện nhờ chụp ảnh kiểm tra.
+- Đo FPS: thử `--timeout` của Edge headless không giữ được trang ⇒ viết `tools/fps_bench.py` (trang tự POST thống kê frame time về server cục bộ). Kết quả khoảng 165 FPS trung bình, p95 6.2 ms trên Iris Xe.
+- Token ước tính cho phần này: khoảng 150k (phần lớn là viết lại template web).

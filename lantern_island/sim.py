@@ -85,7 +85,10 @@ class Sim:
     def __init__(self, seed=0, night=1, scenario=None, extras=False):
         self.level = L = make_level(night)
         self.night = night
-        self.extras = extras  # cosmetic flag for clients; never changes logic
+        self.extras = extras
+        # creative extra: solid decor (trees, graves, rocks) only in the 3D client. Headless never
+        # passes extras, so contract output is unchanged (verified byte-for-byte by tools/verify.py).
+        self.decor = L.decor if extras else []
         self.cfg = T
         self.score_cfg = T["score"]
         self.rng = {k: random.Random("%d:%s" % (seed, k))
@@ -403,6 +406,9 @@ class Sim:
             else:
                 nx, nz = ox, oz
         p["x"], p["z"] = nx, nz
+        if self.decor:
+            self._collide_decor()
+            nx, nz = p["x"], p["z"]
         if not dashing:
             p["y"] += p["vy"] * DT
         top = self.col(nx, nz)
@@ -426,6 +432,17 @@ class Sim:
             p["vx"] = p["vy"] = p["vz"] = 0.0
             p["launch"], p["dash_left"] = None, 0
             self._event("player_hit", {"by": "fall", "flames": p["flames"], "dropped": 0, "lost": lost})
+
+    def _collide_decor(self):
+        p = self.p
+        for d in self.decor:
+            if p["y"] >= d["y"] + d["h"] - 0.05:
+                continue  # above it (jumped over a grave or a rock)
+            dx, dz = p["x"] - d["x"], p["z"] - d["z"]
+            dist = math.hypot(dx, dz)
+            if dist < d["r"]:
+                ux, uz = (dx / dist, dz / dist) if dist > 1e-9 else (1.0, 0.0)
+                p["x"], p["z"] = d["x"] + ux * d["r"], d["z"] + uz * d["r"]
 
     def _pickups(self):
         p, t = self.p, T

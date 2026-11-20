@@ -4,6 +4,7 @@ Angles: measured from +X towards +Z (x = r cos a, z = r sin a), which puts
 Night 3's upper tier and ramps (30 deg, 150 deg) in the z > 0 half as specified.
 """
 import math
+import random
 
 STEP = 0.3  # max height a walker can step up (ramps rise 0.05 m per tick)
 
@@ -40,6 +41,60 @@ class Level:
         """Height of the solid column at (x, z), or None over the sea of clouds."""
         raise NotImplementedError
 
+    # ---- cosmetic obstacles (creative extra, only active when Sim(extras=True), never headless)
+    decor_count = 50
+    decor_regions = [((0.0, 0.0), 40.0)]   # (centre, radius) areas to scatter in
+    _decor = None
+
+    def decor_blocked(self, x, z):
+        """extra per-night exclusion (bridge approach, ramps, ...)"""
+        return False
+
+    @property
+    def decor(self):
+        """Fixed list of obstacles: {kind, x, y, z, r (collision radius), h (height), rot, s (scale)}.
+        Kept away from lanterns, mote/shade points, pads, charms, start, edges and walls so that
+        no standard route is blocked."""
+        if self._decor is not None:
+            return self._decor
+        rng = random.Random(1000 + self.night)  # same layout every game
+        items = []
+        kinds = (("pine", 0.55, 4.6, 0.35), ("deadtree", 0.35, 3.2, 0.2), ("grave", 0.5, 1.0, 0.25),
+                 ("rock", 0.0, 0.0, 0.2))
+        keep_out = ([(l[1][0], l[1][2], 5.0) for l in self.lanterns] +
+                    [(p[0], p[2], 2.5) for p in self.mote_points] + [(p[0], p[2], 2.5) for p in self.shade_points] +
+                    [(p[0][0], p[0][2], 4.0) for p in self.pads] + [(c[1][0], c[1][2], 3.5) for c in self.charms] +
+                    [(self.start[0], self.start[2], 6.0)])
+        tries = 0
+        while len(items) < self.decor_count and tries < 4000:
+            tries += 1
+            (cx, cz), R = rng.choice(self.decor_regions)
+            a, d = rng.uniform(0, 2 * math.pi), R * math.sqrt(rng.uniform(0.02, 1.0))
+            x, z = cx + d * math.cos(a), cz + d * math.sin(a)
+            roll, acc = rng.random(), 0.0
+            for kind, r, h, w in kinds:
+                acc += w
+                if roll <= acc:
+                    break
+            s = rng.uniform(0.85, 1.25)
+            if kind == "rock":
+                r, h = rng.uniform(0.5, 1.0), 0.0
+                h = r * 1.1
+            else:
+                r, h = r * s, h * s
+            base = self.column_top(x, z)
+            if base is None or self.decor_blocked(x, z):
+                continue
+            ok = all(self.column_top(x + (r + 2.5) * math.cos(k * math.pi / 4),
+                                     z + (r + 2.5) * math.sin(k * math.pi / 4)) == base for k in range(8))
+            ok = ok and all(math.hypot(x - kx, z - kz) >= kr + r for kx, kz, kr in keep_out)
+            ok = ok and all(math.hypot(x - o["x"], z - o["z"]) >= 2.2 + r + o["r"] for o in items)
+            if ok:
+                items.append({"kind": kind, "x": round(x, 3), "y": base, "z": round(z, 3), "r": round(r, 3),
+                              "h": round(h, 3), "rot": round(rng.uniform(0, 6.283), 3), "s": round(s, 3)})
+        self._decor = items
+        return items
+
 
 class Night1(Level):
     night, name, duration_s = 1, "Đảo Bến", 300
@@ -48,6 +103,7 @@ class Night1(Level):
     mote_points = ring_points(12, 0, 45, 8) + ring_points(33, 0, 22.5, 16)
     shade_points = ring_points(37, 15, 30, 12)
     shade_interval, shade_max = 480, 6
+    decor_count = 55
 
     def column_top(self, x, z):
         return 0.0 if math.hypot(x, z) <= 40.0 else None
@@ -62,6 +118,11 @@ class Night2(Level):
     shade_interval, shade_max = 420, 8
     charms = [("C1", (35, 0, 0))]
     drifters = True
+    decor_count = 50
+    decor_regions = [((0.0, 0.0), 28.0), ((70.0, 0.0), 28.0)]
+
+    def decor_blocked(self, x, z):
+        return 18.0 <= x <= 52.0 and abs(z) <= 7.0  # keep the bridge approach clear
 
     def __init__(self):
         pads = []
@@ -92,6 +153,20 @@ class Night3(Level):
     drifters = True
     wind = True
     RAMPS = (30.0, 150.0)
+    decor_count = 45
+    decor_regions = [((0.0, 0.0), 45.0)]
+
+    def decor_blocked(self, x, z):
+        r = math.hypot(x, z)
+        if r < 27.0:
+            return True  # tiers, walls and the moat stay clear
+        for a in self.RAMPS:  # ramp corridors
+            ar = math.radians(a)
+            along = x * math.cos(ar) + z * math.sin(ar)
+            lateral = -x * math.sin(ar) + z * math.cos(ar)
+            if abs(lateral) < 4.5 and 18.0 <= along <= 36.0:
+                return True
+        return False
 
     def column_top(self, x, z):
         r = math.hypot(x, z)
