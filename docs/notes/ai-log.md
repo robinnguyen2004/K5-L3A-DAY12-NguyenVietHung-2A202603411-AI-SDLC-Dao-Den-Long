@@ -65,3 +65,16 @@ Công cụ: Claude Code (model Claude Opus 5.5) trong VS Code. Harness: [AGENTS.
 - AI chụp ảnh kiểm tra và tự sửa 3 lỗi hình học trước khi chạy: điều kiện bỏ gân ngói làm mất gần hết hàng ngói, sừng góc mái chĩa vào trong, gờ bậc đá nghiêng ngược.
 - **Bài học đo đạc:** FPS tụt dần qua từng lần đo, cả với bản cũ. AI không kết luận "đồ họa mới nặng" mà đo A/B xen kẽ, rồi tìm ra 12 trình duyệt headless do `fps_bench.py` bỏ sót vẫn đang chạy game. Đã sửa tool (kill theo profile). Đo lại: cũ 165.0 / mới 164.9 FPS.
 - Token ước tính: khoảng 120k.
+
+## Phase 4 (Ticket-04 "Bình minh: phát hành v1.0.0")
+
+| Bước | Việc giao cho AI | Kết quả, tôi kiểm thế nào |
+|---|---|---|
+| Đọc ticket | PDF Ticket-04 + "xây dựng hoàn chỉnh theo Phase 4" | AI tách thành 7 nhóm (bench, soak, xếp hạng, dễ tiếp cận, đóng gói, contract v1.3, retro/video) và ghi 16 giả định D1–D16 trước khi code |
+| Bench | Cảnh chuẩn trong `sim.py` + client đo + `tools/bench.py` | Lần đầu tính `peak_mem_mb` = 1317 MB (cộng trùng bộ nhớ dùng chung) → đổi sang RSS tiến trình renderer, ra khoảng 200 MB. 200 bóng vẽ bằng instancing (~6 draw call) |
+| Soak | `tools/soak.py` đo RSS bằng stdlib trên 3 hệ điều hành | 10 đêm, 0 crash, RSS phẳng |
+| Xếp hạng | Module Python + API trong `run_game.py` + UI | Test thứ tự khi bằng điểm ở hai múi giờ khác nhau, top 10, lưu bền, export qua CLI; tên tiếng Việt chạy được (thử bằng Python vì `curl` của Git Bash gửi sai mã hóa) |
+| Dễ tiếp cận | Đổi phím, phụ đề, mũi tên, giảm chuyển động, chữ ≥ 18 px | Kiểm bằng ảnh chụp: viền đỏ ở phím trùng, chữ lớn |
+| Hồi quy | Đọc lại vòng render | Phát hiện lỗi do AI gây ở phiên trước: comment `//` nuốt lệnh reset đêm → sửa + thêm luật vào AGENTS.md |
+
+**Token / chi phí ước tính (Phase 4):** khoảng 300k token. Cách tiết kiệm: một bản vá lớn có assert cho client thay vì nhiều lần sửa nhỏ; đo bench 10 s khi thử, 30 s khi chính thức; tái dùng `verify.py` cho soak và export.

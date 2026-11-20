@@ -3,7 +3,9 @@
 - Nhân vật, bối cảnh "Đảo Đèn Lồng", Mây, Bóng Mực, Gió Lạc, Ông Đăng: bản gốc của lab Day 12 AI SDLC. Tạo hình "Mây phù thủy" dựa trên ảnh tham khảo do tác giả repo cung cấp.
 - Mã nguồn và toàn bộ hình khối 3D (dựng bằng code, không dùng model ngoài): Nguyễn Việt Hưng cùng Claude Code (Anthropic, Claude Opus 5.5).
 - Phong cách hình ảnh "đất sét mềm" (khối bo tròn, đá xếp tầng, cây hình trứng, mái ngói) học từ ảnh chụp bộ asset của Nigel Goh trên ArtStation do người dùng cung cấp. Repo **không** chứa ảnh, model hay texture của tác giả; mọi hình khối được dựng lại bằng code.
-- Âm thanh: tổng hợp bằng WebAudio trong code, không dùng file ngoài.
+- Âm thanh: tổng hợp bằng WebAudio trong code (bộ dao động và nhiễu), không dùng file âm thanh ngoài.
+- **Công cụ AI tạo nội dung:** Claude Code (Anthropic, Claude Opus 5.5) viết phần lớn mã nguồn, mọi hình khối 3D dựng bằng code, âm thanh tổng hợp, lời dẫn của Ông Đăng, test và tài liệu, theo yêu cầu và dưới sự kiểm duyệt của tác giả. Không dùng AI tạo ảnh, model 3D hay file âm thanh. Nhật ký chi tiết: [docs/notes/ai-log.md](docs/notes/ai-log.md).
+- Font: phông hệ thống của máy (system-ui), không nhúng file font.
 - [three.js](https://threejs.org/) 0.160.0, giấy phép MIT (tải từ CDN jsDelivr).
 - [Pyodide](https://pyodide.org/) 0.26.4, giấy phép MPL-2.0 (tải từ CDN jsDelivr).
 - Phase 1 dùng [Panda3D](https://www.panda3d.org/) 1.10.15 (Modified BSD) cho client cũ; đã bỏ từ Phase 2.

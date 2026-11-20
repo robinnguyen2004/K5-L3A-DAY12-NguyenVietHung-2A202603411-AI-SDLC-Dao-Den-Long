@@ -1,0 +1,25 @@
+{
+  "entries": [
+    {
+      "name": "An_1",
+      "score": 900,
+      "nights_won": 1,
+      "achieved_at": "2026-11-20T10:05:00+07:00",
+      "seed": 7
+    },
+    {
+      "name": "Chi",
+      "score": 400,
+      "nights_won": 1,
+      "achieved_at": "2026-11-20T09:00:00+07:00",
+      "seed": 7
+    },
+    {
+      "name": "Bao",
+      "score": 400,
+      "nights_won": 1,
+      "achieved_at": "2026-11-20T10:00:00+07:00",
+      "seed": 7
+    }
+  ]
+}
